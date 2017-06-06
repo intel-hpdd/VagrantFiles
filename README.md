@@ -168,7 +168,7 @@ Bringing machine 'default' up with 'virtualbox' provider...
 ==> default: Rsyncing folder: /home/malcolm/vagrant-projects/ct73-base/ => /vagrant
 ```
 
-The messages in the output are informational and do not represent an error in the configuration. In particular, the official CentOS boxes are not distributed with the VirtualBox guest additions, which need to be added separately if required.
+The messages in the output are informational and do not represent an error in the configuration. In particular, the CentOS boxes in the `manager-for-lustre` Atlas repository are not distributed with the VirtualBox guest additions, which need to be added separately if required.
 
 When the command completes, login to the VM:
 

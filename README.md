@@ -113,7 +113,7 @@ vagrant up
 
 This step can take some time, as the base VM box has to be downloaded from the Atlas service. The base box in the above example is approximately 611MB.
 
-**Note:** Boxes are only downloaded once, irrespective of how many virtual machines will be created. Each VM instance will create a clone of the original box as their root disk.
+**Note:** Boxes are only downloaded once, irrespective of how many virtual machines will be created or how many projects use the same box. Each VM instance will create a clone of the original box as their root disk. Downloaded boxes are stored in `$HOME/.vagrant.d/boxes`.
 
 The following exmaple is a complete transcript of the process:
 

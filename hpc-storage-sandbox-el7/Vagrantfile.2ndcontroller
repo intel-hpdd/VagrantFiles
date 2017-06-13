@@ -63,7 +63,7 @@ __EOF
 	end
 	}
 	config.vm.provision "shell", inline: "cp -f /vagrant/hosts /etc/hosts"
-	config.vm.provision "shell", inline: "setenforce 0; cat >/etc/selinux/config<<__EOF
+	config.vm.provision "shell", inline: "selinuxenabled && setenforce 0; cat >/etc/selinux/config<<__EOF
 SELINUX=disabled
 SELINUXTYPE=targeted
 __EOF"
@@ -71,7 +71,7 @@ __EOF"
 	# A simple way to create a key that can be used to enable
 	# SSH between the virtual guests.
 	#
-	# The private key is copied onto the root account of the 
+	# The private key is copied onto the root account of the
 	# administration node and the public key is appended to the
 	# authorized_keys file of the root account for all nodes
 	# in the cluster.
@@ -217,7 +217,7 @@ __EOF"
 				# consecutive numbering. Each pair of servers has a set
 				# of shared virtual disks (vdisks) numbered in the range
 				# osd_min to osd_max. e.g.:
-				# oss{1,2} share OST0..OST7 and oss{3,4} share OST8..OST16, 
+				# oss{1,2} share OST0..OST7 and oss{3,4} share OST8..OST16,
 				# assuming the number of disks per pair (sdnum) is 8
 				osd_min = ((oss_idx-1) / 2) * sdnum
 				osd_max = osd_min + 7

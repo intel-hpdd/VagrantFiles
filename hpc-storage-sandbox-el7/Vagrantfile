@@ -15,7 +15,17 @@ Vagrant.configure("2") do |config|
 	end
 
 	# Directory root for additional vdisks for MGT, MDT0, and OSTs
+	# XXX It would be nice to put this in the above provider block since
+	#     it really only applies for the vbox provider
 	vdisk_root = "#{ENV['HOME']}/VirtualBox\ VMs/vdisks"
+
+        # use the "images" storage pool
+	config.vm.provider :libvirt do |libvirt, override|
+		override.vm.box = "centos/7"
+		libvirt.storage_pool_name = "images"
+		libvirt.memory = 1024
+	end
+
 	# Number of shared disk devices per OSS server pair
 	sdnum=8
 
@@ -153,6 +163,22 @@ __EOF"
 					"--mtype", "shareable",
 					"--device", "0"]
 			end
+			mds.vm.provider :libvirt do |libvirt|
+				if mds_idx==1 # && not(File.exist?("#{vdisk_root}/mgs.vdi"))
+					libvirt.storage :file,
+							:size => '512M',
+							:path => 'mgs.img',
+							:allow_existing => true,
+							:shareable => true,
+							:type => 'raw'
+					libvirt.storage :file,
+							:size => '5120M',
+							:path => 'mdt0.img',
+							:allow_existing => true,
+							:shareable => true,
+							:type => 'raw'
+				end
+			end
 			# Set host name of VM
 			mds.vm.host_name = "#{host_prefix}-mds#{mds_idx}.lfs.local"
 			# Admin / management network
@@ -232,7 +258,20 @@ __EOF"
 						]
 				end
 			end
-
+			oss.vm.provider :libvirt do |libvirt|
+				osd_min = ((oss_idx-1) / 2) * sdnum
+				osd_max = osd_min + 7
+				if oss_idx % 2 == 1
+					(osd_min..osd_max).each do |ost|
+						libvirt.storage :file,
+								:size => '5120M',
+								:path => "ost#{ost}.img",
+								:allow_existing => true,
+								:shareable => true,
+								:type => 'raw'
+					end
+				end
+			end
 			oss.vm.host_name = "#{host_prefix}-oss#{oss_idx}.lfs.local"
 			# Admin / management network
 			oss.vm.network "private_network",

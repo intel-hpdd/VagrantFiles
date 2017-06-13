@@ -28,6 +28,12 @@ __EOF
 			v.memory = 4096
 			v.cpus = 2
 		end
+		b.vm.provider :libvirt do |v, o|
+			o.vm.box = "centos/7"
+			v.storage_pool_name = "images"
+			v.memory = 4096
+			v.cpus = 2
+		end
 		b.vm.host_name = "#{host_prefix}-builder.lfs.local"
 		# Admin / management network
 		b.vm.network "private_network",

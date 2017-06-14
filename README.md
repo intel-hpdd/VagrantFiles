@@ -35,22 +35,10 @@ Install the package. For example, for Fedora, RHEL 7, or CentOS 7:
 
 ```
 dnf install \
-https://releases.hashicorp.com/vagrant/1.9.4/vagrant_1.9.4_x86_64.rpm
+https://releases.hashicorp.com/vagrant/1.9.5/vagrant_1.9.5_x86_64.rpm
 ```
 
-This will download and install version `1.9.4`.
-
-**Note:** there is a known defect in version `1.9.4` of the official distribution provided by the Vagrant project that can cause the command line tool to crash whenever it is run. The issue affects multiple platforms and is documented here:
-
-https://github.com/mitchellh/vagrant/issues/8519
-
-This is believed to have been fixed in later releases. It is recommended that users upgrade to the latest version of Vagrant available. There is a workaround – run the following command after the installation is complete:
-
-```
-vagrant plugin install vagrant-share --plugin-version 1.1.8
-```
-
-This will install an updated version of the `vagrant-share` gem into the user's local configuration, overriding the system version installed by the Vagrant RPM.
+This will download and install version `1.9.5`.
 
 Once installed, Vagrant does not require super-user privileges to run.
 
@@ -255,7 +243,7 @@ To reboot a VM:
 vagrant reload [<vm name>]
 ```
 
-**Note:** Don't reboot a VM from within the guest shell. Always use the `vagrant reload` command from the host. Rebooting from within the guest causes invalidates the SSH configuration and will prevent a connection being made on the next boot.
+**Note:** Don't reboot a VM from within the guest shell. Always use the `vagrant reload` command from the host. Rebooting from within the guest invalidates the SSH configuration and will prevent a connection being made on the next boot.
 
 To get the current status of all VMs in a project:
 

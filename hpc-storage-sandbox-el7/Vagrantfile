@@ -99,6 +99,7 @@ __EOF"
 	config.vm.define "adm", primary: true do |adm|
 		adm.vm.provider "virtualbox" do |v|
 			v.memory = 2048
+			v.name = "adm"
 		end
 		adm.vm.host_name = "#{host_prefix}-adm.lfs.local"
 		adm.vm.network "forwarded_port", guest: 443, host: 8443
@@ -119,6 +120,8 @@ __EOF"
 			# Storage services associated with these #{vdisk_root}
 			# will be maintained using HA failover.
 			mds.vm.provider "virtualbox" do |vbx|
+				vbx.name = "mds#{mds_idx}"
+
 				if mds_idx==1 && not(File.exist?("#{vdisk_root}/mgs.vdi"))
 					vbx.customize ["createmedium", "disk",
 						"--filename", "#{vdisk_root}/mgs.vdi",
@@ -193,6 +196,8 @@ __EOF"
 			# Storage services associated with these #{vdisk_root}
 			# will be maintained using HA failover.
 			oss.vm.provider "virtualbox" do |vbx|
+				vbx.name = "oss#{oss_idx}"
+
 				# Set the OST index range based on the node number.
 				# Each OSS is one of a pair, and will share these devices
 				# Equation assumes that OSSs are allocated in pairs with
@@ -272,6 +277,10 @@ __EOF"
 			c.vm.network "private_network",
 				ip: "#{lnet_pfx}.3#{c_idx}",
 				netmask: "255.255.255.0"
+
+			c.vm.provider "virtualbox" do |v|
+				v.name = "c#{c_idx}"
+			end
 		end
 	end
 end

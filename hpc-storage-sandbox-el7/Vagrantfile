@@ -4,7 +4,7 @@ Vagrant.configure("2") do |config|
 	# Use box from Manager For Lustre project - this differs from the
 	# "official" CentOS base box by using a SATA controller instead of IDE.
 	# This simplifies the addition of extra disks for the storage servers.
-	config.vm.box = "manager-for-lustre/centos73-1611-base"
+	config.vm.box = "manager-for-lustre/centos74-1708-base"
 
 	# Set the default RAM allocation for each VM.
 	# 1GB is sufficient for demo and training purposes.
@@ -21,20 +21,20 @@ Vagrant.configure("2") do |config|
 
 	# Hostname prefix for the cluster nodes
 	# Example conventions:
-	# ct<vmax><vmin>: CentOS <vmax>.<vmin>, e.g. ct73 = CentOS 7.3
-	# rh<vmax><vmin>: RHEL <vmax>.<vmin>, e.g. rh73 = RHEL 7.3
+	# ct<vmax><vmin>: CentOS <vmax>.<vmin>, e.g. ct74 = CentOS 7.4
+	# rh<vmax><vmin>: RHEL <vmax>.<vmin>, e.g. rh74 = RHEL 7.4
 	# el<vmax><vmin>: Generic RHEL derivative <vmax>.<vmin>,
-	# 	e.g. el73 = RHEL/CentOS 7.3
+	# 	e.g. el74 = RHEL/CentOS 7.4
 	# el<vmax>: Generic RHEL derivative <vmax>, e.g. el7 = RHEL/CentOS 7.x
 	# sl<vmax><vmin>: SLES <vmax> SP<vmin>, e.g. sl121 = SLES 12 sp1
 	# ub<vmax><vmin>: Ubuntu <vmax>.<vmin>, e.g. ub1604 = Ubuntu 16.04
 	#
 	# Each host in the virtual cluster will be automatically assigned
 	# a name based on the prefix and the function of the host
-	# The following examples are nodes running CentOS 7.3:
-	# ct73-mds1 = 1st metadata server
-	# ct73-oss3 = 3rd OSS
-	# ct73-c2 = 2nd compute node
+	# The following examples are nodes running CentOS 7.4:
+	# ct74-mds1 = 1st metadata server
+	# ct74-oss3 = 3rd OSS
+	# ct74-c2 = 2nd compute node
 	host_prefix="ct7"
 	# Create a set of /24 networks under a single /16 subnet range
 	subnet_prefix="10.73"

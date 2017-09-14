@@ -19,23 +19,6 @@ Vagrant.configure("2") do |config|
 	# Number of shared disk devices per OSS server pair
 	sdnum=8
 
-	# Hostname prefix for the cluster nodes
-	# Example conventions:
-	# ct<vmax>: CentOS <vmax>.<vmin>, e.g. ct7 = CentOS 7.4
-	# rh<vmax>: RHEL <vmax>.<vmin>, e.g. rh7 = RHEL 7.4
-	# el<vmax>: Generic RHEL derivative <vmax>,
-	# 	e.g. el7 = RHEL/CentOS 7.4
-	# el<vmax>: Generic RHEL derivative <vmax>, e.g. el7 = RHEL/CentOS 7.x
-	# sl<vmax>: SLES <vmax> SP<vmin>, e.g. sl12 = SLES 12 sp1
-	# ub<vmax>: Ubuntu <vmax>.<vmin>, e.g. ub16 = Ubuntu 16.04
-	#
-	# Each host in the virtual cluster will be automatically assigned
-	# a name based on the prefix and the function of the host
-	# The following examples are nodes running CentOS 7.4:
-	# ct7-mds1 = 1st metadata server
-	# ct7-oss3 = 3rd OSS
-	# ct7-c2 = 2nd compute node
-	host_prefix="ct7"
 	# Create a set of /24 networks under a single /16 subnet range
 	subnet_prefix="10.73"
 	# Management network for admin comms
@@ -51,17 +34,17 @@ Vagrant.configure("2") do |config|
 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
 ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
 
-#{mgmt_net_pfx}.9 #{host_prefix}-b.lfs.local #{host_prefix}-b
-#{mgmt_net_pfx}.10 #{host_prefix}-adm.lfs.local #{host_prefix}-adm
-#{mgmt_net_pfx}.11 #{host_prefix}-mds1.lfs.local #{host_prefix}-mds1
-#{mgmt_net_pfx}.12 #{host_prefix}-mds2.lfs.local #{host_prefix}-mds2
-#{mgmt_net_pfx}.21 #{host_prefix}-oss1.lfs.local #{host_prefix}-oss1
-#{mgmt_net_pfx}.22 #{host_prefix}-oss2.lfs.local #{host_prefix}-oss2
-#{mgmt_net_pfx}.23 #{host_prefix}-oss3.lfs.local #{host_prefix}-oss3
-#{mgmt_net_pfx}.24 #{host_prefix}-oss4.lfs.local #{host_prefix}-oss4
+#{mgmt_net_pfx}.9 b.lfs.local b
+#{mgmt_net_pfx}.10 adm.lfs.local adm
+#{mgmt_net_pfx}.11 mds1.lfs.local mds1
+#{mgmt_net_pfx}.12 mds2.lfs.local mds2
+#{mgmt_net_pfx}.21 oss1.lfs.local oss1
+#{mgmt_net_pfx}.22 oss2.lfs.local oss2
+#{mgmt_net_pfx}.23 oss3.lfs.local oss3
+#{mgmt_net_pfx}.24 oss4.lfs.local oss4
 __EOF
 	(1..8).each do |cidx|
-		f.puts "#{mgmt_net_pfx}.3#{cidx} #{host_prefix}-c#{cidx}.lfs.local #{host_prefix}-c#{cidx}\n"
+		f.puts "#{mgmt_net_pfx}.3#{cidx} c#{cidx}.lfs.local c#{cidx}\n"
 	end
 	}
 	config.vm.provision "shell", inline: "cp -f /vagrant/hosts /etc/hosts"
@@ -101,7 +84,7 @@ __EOF"
 			v.memory = 2048
 			v.name = "adm"
 		end
-		adm.vm.host_name = "#{host_prefix}-adm.lfs.local"
+		adm.vm.host_name = "adm.lfs.local"
 		adm.vm.network "forwarded_port", guest: 443, host: 8443
 		# Admin / management network
 		adm.vm.network "private_network",
@@ -157,7 +140,7 @@ __EOF"
 					"--device", "0"]
 			end
 			# Set host name of VM
-			mds.vm.host_name = "#{host_prefix}-mds#{mds_idx}.lfs.local"
+			mds.vm.host_name = "mds#{mds_idx}.lfs.local"
 			# Admin / management network
 			mds.vm.network "private_network",
 				ip: "#{mgmt_net_pfx}.1#{mds_idx}",
@@ -233,12 +216,12 @@ __EOF"
 						"--type", "hdd",
 						"--medium", "#{vdisk_root}/ost#{osd}.vdi",
 						"--mtype", "shareable",
-						"--comment","%sOST%04d" % [host_prefix.upcase, osd]
+						"--comment","OST%04d" % [osd]
 						]
 				end
 			end
 
-			oss.vm.host_name = "#{host_prefix}-oss#{oss_idx}.lfs.local"
+			oss.vm.host_name = "oss#{oss_idx}.lfs.local"
 			# Admin / management network
 			oss.vm.network "private_network",
 				ip: "#{mgmt_net_pfx}.2#{oss_idx}",
@@ -268,7 +251,7 @@ __EOF"
 	(1..8).each do |c_idx|
 		config.vm.define "c#{c_idx}",
 			autostart: (c_idx>2 ? false : true) do |c|
-			c.vm.host_name = "#{host_prefix}-c#{c_idx}.lfs.local"
+			c.vm.host_name = "c#{c_idx}.lfs.local"
 			# Admin / management network
 			c.vm.network "private_network",
 				ip: "#{mgmt_net_pfx}.3#{c_idx}",

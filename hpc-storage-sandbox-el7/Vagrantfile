@@ -111,6 +111,7 @@ __EOF"
 						"--size", "512",
 						"--format", "VDI",
 						"--variant", "fixed"]
+
 				end
 				if mds_idx==1 && not(File.exist?("#{vdisk_root}/mdt0.vdi"))
 					vbx.customize ["createmedium", "disk",
@@ -131,6 +132,11 @@ __EOF"
 					"--medium", "#{vdisk_root}/mgs.vdi",
 					"--mtype", "shareable",
 					"--device", "0"]
+				vbx.customize [
+					'setextradata', :id,
+					'VBoxInternal/Devices/ahci/0/Config/Port1/SerialNumber',
+					'MGS00000000000000000'
+				]
 				vbx.customize ["storageattach", :id,
 					"--storagectl", "SATA Controller",
 					"--port", "2",
@@ -138,6 +144,11 @@ __EOF"
 					"--medium", "#{vdisk_root}/mdt0.vdi",
 					"--mtype", "shareable",
 					"--device", "0"]
+				vbx.customize [
+					'setextradata', :id,
+					'VBoxInternal/Devices/ahci/0/Config/Port2/SerialNumber',
+					'MDT00000000000000000'
+				]
 			end
 			# Set host name of VM
 			mds.vm.host_name = "mds#{mds_idx}.lfs.local"
@@ -218,6 +229,11 @@ __EOF"
 						"--mtype", "shareable",
 						"--comment","OST%04d" % [osd]
 						]
+					vbx.customize [
+						'setextradata', :id,
+						"VBoxInternal/Devices/ahci/0/Config/Port#{pnum}/SerialNumber",
+						"OSTPORT#{pnum}".ljust(20, '0')
+					]
 				end
 			end
 

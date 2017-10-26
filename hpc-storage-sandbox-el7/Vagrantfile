@@ -5,6 +5,9 @@ Vagrant.configure("2") do |config|
 	# "official" CentOS base box by using a SATA controller instead of IDE.
 	# This simplifies the addition of extra disks for the storage servers.
 	config.vm.box = "manager-for-lustre/centos74-1708-base"
+	config.ssh.username = 'root'
+	config.ssh.password = 'vagrant'
+	config.ssh.insert_key = 'true'
 
 	# Set the default RAM allocation for each VM.
 	# 1GB is sufficient for demo and training purposes.

@@ -5,6 +5,7 @@ Vagrant.configure("2") do |config|
 	# "official" CentOS base box by using a SATA controller instead of IDE.
 	# This simplifies the addition of extra disks for the storage servers.
 	config.vm.box = "manager-for-lustre/centos74-1708-base"
+	config.vm.box_version = "0.0.5"
 
 	# Set the default RAM allocation for each VM.
 	# 1GB is sufficient for demo and training purposes.
@@ -82,6 +83,7 @@ __EOF"
 	config.vm.define "adm", primary: true do |adm|
 		adm.vm.provider "virtualbox" do |v|
 			v.memory = 2048
+			v.cpus = 4
 			v.name = "adm"
 		end
 		adm.vm.host_name = "adm.lfs.local"
@@ -104,6 +106,7 @@ __EOF"
 			# will be maintained using HA failover.
 			mds.vm.provider "virtualbox" do |vbx|
 				vbx.name = "mds#{mds_idx}"
+				vbx.cpus = 4
 
 				if mds_idx==1 && not(File.exist?("#{vdisk_root}/mgs.vdi"))
 					vbx.customize ["createmedium", "disk",
@@ -191,6 +194,7 @@ __EOF"
 			# will be maintained using HA failover.
 			oss.vm.provider "virtualbox" do |vbx|
 				vbx.name = "oss#{oss_idx}"
+				vbx.cpus = 4
 
 				# Set the OST index range based on the node number.
 				# Each OSS is one of a pair, and will share these devices
@@ -232,7 +236,7 @@ __EOF"
 					vbx.customize [
 						'setextradata', :id,
 						"VBoxInternal/Devices/ahci/0/Config/Port#{pnum}/SerialNumber",
-						"OSTPORT#{pnum}".ljust(20, '0')
+						"OST#{osd}PORT#{pnum}".ljust(20, '0')
 					]
 				end
 			end

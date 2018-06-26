@@ -15,13 +15,34 @@ LNET_PFX = "#{SUBNET_PREFIX}.20".freeze
 # get an IP assigned.
 xnet_idx = 230
 
-ISCI_IP = "#{LNET_PFX}.30".freeze
+ISCI_IP = "#{SUBNET_PREFIX}.40.10".freeze
 
-def provision_mdns(config)
+def provision_iscsi_net(config, num)
+  config.vm.network 'private_network',
+                    ip: "#{SUBNET_PREFIX}.40.#{num}",
+                    netmask: '255.255.255.0',
+                    virtualbox__intnet: 'iscsi-net'
+end
+
+def provision_lnet_net(config, num)
+  config.vm.network 'private_network',
+                    ip: "#{LNET_PFX}.#{num}",
+                    netmask: '255.255.255.0',
+                    virtualbox__intnet: 'lnet-net'
+end
+
+def provision_mgmt_net(config, num)
+  config.vm.network 'private_network',
+                    ip: "#{MGMT_NET_PFX}.#{num}",
+                    netmask: '255.255.255.0',
+                    virtualbox__intnet: 'adm-net'
+end
+
+def provision_mdns(config, iface)
   config.vm.provision 'mdns', type: 'shell', inline: <<-SHELL
     yum install -y epel-release
     yum install -y avahi nss-mdns
-    sed -i 's/myhostname/mdns/' /etc/nsswitch.conf
+    sed -i 's/^#allow-interfaces=.*/allow-interfaces=#{iface}/' /etc/avahi/avahi-daemon.conf
     systemctl restart network
     systemctl enable avahi-daemon.socket
     systemctl start avahi-daemon.socket
@@ -57,13 +78,15 @@ def fix_hostfile(config)
 end
 
 Vagrant.configure('2') do |config|
-  config.vm.box = 'manager-for-lustre/centos75-1804-base'
+  config.vm.box = 'centos/7'
 
   config.vm.provider 'virtualbox' do |vbx|
     vbx.linked_clone = true
     vbx.memory = 1024
     vbx.cpus = 4
   end
+
+  config.vm.provision 'deps', type: 'shell', inline: 'yum install -y jq htop'
 
   system("ssh-keygen -t rsa -N '' -f id_rsa") unless File.exist?('id_rsa')
 
@@ -82,7 +105,11 @@ __EOF
   SHELL
 
   config.vm.define 'iscsi' do |iscsi|
+    iscsi.vm.box = 'manager-for-lustre/centos75-1804-base'
     iscsi.vm.hostname = 'iscsi.local'
+
+    fix_hostfile iscsi
+    provision_iscsi_net iscsi, '10'
 
     iscsi.vm.provider 'virtualbox' do |vbx|
       dir = "#{ENV['HOME']}/VirtualBox\ VMs/vdisks"
@@ -121,11 +148,7 @@ __EOF
                        "VBoxInternal/Devices/ahci/0/Config/Port#{port}/SerialNumber",
                        name.ljust(20, '0')]
       end
-
-      # Lustre / application network
-      iscsi.vm.network 'private_network',
-                       ip: ISCI_IP,
-                       netmask: '255.255.255.0'
+    end
 
       ost_commands = ('d'..'z')
                      .take(20)
@@ -155,11 +178,6 @@ __EOF
         targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:oss/tpg1/acls create iqn.2015-01.com.whamcloud:oss2
         systemctl enable target
       SHELL
-
-      fix_hostfile iscsi
-
-      provision_mdns iscsi
-    end
   end
 
   #
@@ -172,13 +190,9 @@ __EOF
     adm.vm.network 'forwarded_port', guest: 8080, host: 8081
 
     # Admin / management network
-    adm.vm.network 'private_network',
-                   ip: "#{MGMT_NET_PFX}.10",
-                   netmask: '255.255.255.0'
+    provision_mgmt_net adm, '10'
 
-    fix_hostfile adm
-
-    provision_mdns adm
+    provision_mdns adm, 'eth1'
 
     # Install IML onto the admin node
     # This requires you have the IML source tree available at
@@ -200,22 +214,20 @@ __EOF
     config.vm.define "mds#{i}" do |mds|
       mds.vm.hostname = "mds#{i}.local"
 
-      # Lustre / application network
-      mds.vm.network 'private_network',
-                     ip: "#{LNET_PFX}.1#{i}",
-                     netmask: '255.255.255.0'
+      provision_lnet_net mds, "1#{i}"
 
       # Admin / management network
-      mds.vm.network 'private_network',
-                     ip: "#{MGMT_NET_PFX}.1#{i}",
-                     netmask: '255.255.255.0'
+      provision_mgmt_net mds, "1#{i}"
+
+      provision_iscsi_net mds, "1#{i}"
 
       # Private network to simulate crossover.
       # Used exclusively as additional cluster network
       mds.vm.network 'private_network',
                      ip: "#{SUBNET_PREFIX}.#{xnet_idx}.1#{i}",
                      netmask: '255.255.255.0',
-                     auto_config: false
+                     auto_config: false,
+                     virtualbox__intnet: "crossover-net#{xnet_idx}"
 
       # Increment the "crossover" subnet number so that
       # each HA pair has a unique "crossover" subnet
@@ -223,7 +235,7 @@ __EOF
 
       fix_hostfile mds
 
-      provision_mdns mds
+      provision_mdns mds, 'eth2'
 
       provision_iscsi_client mds, 'mds', i
 
@@ -245,21 +257,20 @@ __EOF
       oss.vm.hostname = "oss#{i}.local"
 
       # Lustre / application network
-      oss.vm.network 'private_network',
-                     ip: "#{LNET_PFX}.2#{i}",
-                     netmask: '255.255.255.0'
+      provision_lnet_net oss, "2#{i}"
 
       # Admin / management network
-      oss.vm.network 'private_network',
-                     ip: "#{MGMT_NET_PFX}.2#{i}",
-                     netmask: '255.255.255.0'
+      provision_mgmt_net oss, "2#{i}"
 
       # Private network to simulate crossover.
       # Used exclusively as additional cluster network
       oss.vm.network 'private_network',
                      ip: "#{SUBNET_PREFIX}.#{xnet_idx}.2#{i}",
                      netmask: '255.255.255.0',
-                     auto_config: false
+                     auto_config: false,
+                     virtualbox__intnet: "crossover-net#{xnet_idx}"
+
+      provision_iscsi_net oss, "2#{i}"
 
       # Increment the "crossover" subnet number so that
       # each HA pair has a unique "crossover" subnet
@@ -267,31 +278,27 @@ __EOF
 
       fix_hostfile oss
 
-      provision_mdns oss
-
-      cleanup_storage_server oss
+      provision_mdns oss, 'eth2'
 
       provision_iscsi_client oss, 'oss', i
+
+      cleanup_storage_server oss
     end
   end
 
-  # # Create a set of compute nodes.
-  # # By default, only 2 compute nodes are created.
-  # # The configuration supports a maximum of 8 compute nodes.
-  (1..8).each do |c_idx|
-    config.vm.define "c#{c_idx}",
-                     autostart: c_idx <= 2 do |c|
-      c.vm.hostname = "c#{c_idx}.local"
+  # Create a set of compute nodes.
+  # By default, only 2 compute nodes are created.
+  # The configuration supports a maximum of 8 compute nodes.
+  (1..8).each do |i|
+    config.vm.define "c#{i}",
+                     autostart: i <= 2 do |c|
+      c.vm.hostname = "c#{i}.local"
 
       # Admin / management network
-      c.vm.network 'private_network',
-                   ip: "#{MGMT_NET_PFX}.3#{c_idx}",
-                   netmask: '255.255.255.0'
+      provision_mgmt_net c, "3#{i}"
 
       # Lustre / application network
-      c.vm.network 'private_network',
-                   ip: "#{LNET_PFX}.3#{c_idx}",
-                   netmask: '255.255.255.0'
+      provision_lnet_net c, "3#{i}"
     end
   end
 end

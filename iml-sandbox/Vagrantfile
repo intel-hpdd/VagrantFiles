@@ -65,9 +65,9 @@ def provision_iscsi_client(config, name, idx)
     yum -y install iscsi-initiator-utils lsscsi
     echo "InitiatorName=iqn.2015-01.com.whamcloud:#{name}#{idx}" > /etc/iscsi/initiatorname.iscsi
     iscsiadm --mode discoverydb --type sendtargets --portal #{ISCI_IP}:3260 --discover
-    iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP}:3260 --login
     iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP}:3260 -o update -n node.startup -v automatic
     iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP}:3260 -o update -n node.conn[0].startup -v automatic
+    systemctl start iscsi
   SHELL
 end
 
@@ -89,7 +89,7 @@ Vagrant.configure('2') do |config|
   config.vm.provision 'deps', type: 'shell', inline: <<-SHELL
     yum install -y epel-release
     yum update -y
-    yum install -y jq htop
+    yum install -y jq htop psmisc
   SHELL
 
   system("ssh-keygen -t rsa -N '' -f id_rsa") unless File.exist?('id_rsa')
@@ -303,6 +303,8 @@ __EOF
 
       # Lustre / application network
       provision_lnet_net c, "3#{i}"
+
+      provision_mdns c, 'eth1'
     end
   end
 end

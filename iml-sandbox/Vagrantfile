@@ -38,6 +38,15 @@ def provision_mgmt_net(config, num)
                     virtualbox__intnet: 'adm-net'
 end
 
+def provision_fence_agents(config)
+  config.vm.provision 'fence-agents', type: 'shell', inline: <<-SHELL
+    yum install -y epel-release
+    yum install -y yum-plugin-copr
+    yum -y copr enable managerforlustre/manager-for-lustre-devel
+    yum install -y fence-agents-vbox
+  SHELL
+end
+
 def provision_mdns(config, iface)
   config.vm.provision 'mdns', type: 'shell', inline: <<-SHELL
     yum install -y epel-release
@@ -180,6 +189,7 @@ __EOF
       targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/acls create iqn.2015-01.com.whamcloud:mds2
       targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:oss/tpg1/acls create iqn.2015-01.com.whamcloud:oss1
       targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:oss/tpg1/acls create iqn.2015-01.com.whamcloud:oss2
+      targetcli saveconfig
       systemctl enable target
     SHELL
   end
@@ -198,10 +208,20 @@ __EOF
 
     provision_mdns adm, 'eth1'
 
+    provision_fence_agents adm
+
+    # Install IML onto the admin node
+    # Using the devel repo from Copr
+    adm.vm.provision 'install-iml-devel-copr', type: 'shell', run: 'never', inline: <<-SHELL
+      yum-config-manager --add-repo=https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/master/chroma_support.repo
+      yum install -y python2-iml-manager
+      chroma-config setup admin lustre localhost
+    SHELL
+
     # Install IML onto the admin node
     # This requires you have the IML source tree available at
     # /integrated-manager-for-lustre
-    adm.vm.provision 'install-iml', type: 'shell', run: 'never', inline: <<-SHELL
+    adm.vm.provision 'install-iml-local', type: 'shell', run: 'never', inline: <<-SHELL
       yum-config-manager --add-repo=https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/master/chroma_support.repo
       yum install -y rpmdevtools git ed epel-release python-setuptools
       cd /integrated-manager-for-lustre
@@ -242,6 +262,8 @@ __EOF
       provision_mdns mds, 'eth2'
 
       provision_iscsi_client mds, 'mds', i
+
+      provision_fence_agents mds
 
       cleanup_storage_server mds
     end
@@ -285,6 +307,8 @@ __EOF
       provision_mdns oss, 'eth2'
 
       provision_iscsi_client oss, 'oss', i
+
+      provision_fence_agents oss
 
       cleanup_storage_server oss
     end

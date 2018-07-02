@@ -17,9 +17,16 @@ xnet_idx = 230
 
 ISCI_IP = "#{SUBNET_PREFIX}.40.10".freeze
 
+ISCI_IP2 = "#{SUBNET_PREFIX}.50.10".freeze
+
 def provision_iscsi_net(config, num)
   config.vm.network 'private_network',
                     ip: "#{SUBNET_PREFIX}.40.#{num}",
+                    netmask: '255.255.255.0',
+                    virtualbox__intnet: 'iscsi-net'
+
+  config.vm.network 'private_network',
+                    ip: "#{SUBNET_PREFIX}.50.#{num}",
                     netmask: '255.255.255.0',
                     virtualbox__intnet: 'iscsi-net'
 end
@@ -36,6 +43,15 @@ def provision_mgmt_net(config, num)
                     ip: "#{MGMT_NET_PFX}.#{num}",
                     netmask: '255.255.255.0',
                     virtualbox__intnet: 'adm-net'
+end
+
+def provision_mpath(config)
+  config.vm.provision 'mpath', type: 'shell', inline: <<-SHELL
+    yum -y install device-mapper-multipath
+    cp /usr/share/doc/device-mapper-multipath-*/multipath.conf /etc/multipath.conf
+    systemctl start multipathd.service
+    systemctl enable multipathd.service
+  SHELL
 end
 
 def provision_fence_agents(config)
@@ -76,6 +92,8 @@ def provision_iscsi_client(config, name, idx)
     iscsiadm --mode discoverydb --type sendtargets --portal #{ISCI_IP}:3260 --discover
     iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP}:3260 -o update -n node.startup -v automatic
     iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP}:3260 -o update -n node.conn[0].startup -v automatic
+    iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP2}:3260 -o update -n node.startup -v automatic
+    iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP2}:3260 -o update -n node.conn[0].startup -v automatic
     systemctl start iscsi
   SHELL
 end
@@ -185,6 +203,8 @@ __EOF
       #{ost_commands}
       targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/portals/ create #{ISCI_IP}
       targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:oss/tpg1/portals/ create #{ISCI_IP}
+      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/portals/ create #{ISCI_IP2}
+      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:oss/tpg1/portals/ create #{ISCI_IP2}
       targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/acls create iqn.2015-01.com.whamcloud:mds1
       targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/acls create iqn.2015-01.com.whamcloud:mds2
       targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:oss/tpg1/acls create iqn.2015-01.com.whamcloud:oss1
@@ -263,6 +283,8 @@ __EOF
 
       provision_iscsi_client mds, 'mds', i
 
+      provision_mpath mds
+
       provision_fence_agents mds
 
       cleanup_storage_server mds
@@ -307,6 +329,8 @@ __EOF
       provision_mdns oss, 'eth2'
 
       provision_iscsi_client oss, 'oss', i
+
+      provision_mpath oss
 
       provision_fence_agents oss
 

@@ -258,6 +258,10 @@ __EOF
     config.vm.define "mds#{i}" do |mds|
       mds.vm.hostname = "mds#{i}.local"
 
+      mds.vm.provider 'virtualbox' do |vbx|
+        vbx.name = "mds#{i}"
+      end
+
       provision_lnet_net mds, "1#{i}"
 
       # Admin / management network
@@ -303,6 +307,10 @@ __EOF
                      autostart: i <= 2 do |oss|
 
       oss.vm.hostname = "oss#{i}.local"
+
+      oss.vm.provider 'virtualbox' do |vbx|
+        vbx.name = "oss#{i}"
+      end
 
       # Lustre / application network
       provision_lnet_net oss, "2#{i}"

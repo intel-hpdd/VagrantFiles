@@ -104,6 +104,18 @@ def fix_hostfile(config)
                       inline: "sed  -i '/^127.0.0.1\t#{config.vm.hostname}*/d' /etc/hosts"
 end
 
+def configure_lustre_network(config)
+  config.vm.provision 'configure-lustre-network', type: 'shell', run: 'never', inline: <<-SHELL
+    systemctl stop firewalld; systemctl disable firewalld;
+    systemctl start ntpd;
+    modprobe lnet
+    lnetctl lnet configure
+    lnetctl net add --net tcp0 --if enp0s9
+    /sbin/modprobe zfs;
+    genhostid
+  SHELL
+end
+
 Vagrant.configure('2') do |config|
   config.vm.box = 'centos/7'
 
@@ -292,6 +304,8 @@ __EOF
       provision_fence_agents mds
 
       cleanup_storage_server mds
+
+      configure_lustre_network mds
     end
   end
 
@@ -343,6 +357,8 @@ __EOF
       provision_fence_agents oss
 
       cleanup_storage_server oss
+
+      configure_lustre_network oss
     end
   end
 

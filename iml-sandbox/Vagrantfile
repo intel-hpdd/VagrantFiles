@@ -110,8 +110,7 @@ def configure_lustre_network(config)
     systemctl start ntpd;
     modprobe lnet
     lnetctl lnet configure
-    lnetctl net add --net tcp0 --if enp0s9
-    /sbin/modprobe zfs;
+    lnetctl net add --net tcp0 --if eth1
     genhostid
   SHELL
 end

@@ -126,7 +126,6 @@ def install_lustre_ldiskfs(config)
   config.vm.provision 'install-lustre-ldiskfs', type: 'shell', run: 'never', inline: <<-SHELL
     yum clean all
     yum install -y lustre-ldiskfs
-    genhostid
   SHELL
 end
 

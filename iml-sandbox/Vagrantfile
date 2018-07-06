@@ -323,17 +323,21 @@ __EOF
       install_lustre_zfs mds
 
       install_lustre_ldiskfs mds
+
+      disk_size = (i == 1 ? '536870912' : '5368709120')
+      pool_name = (i == 1 ? 'mgs' : 'mds')
+
+      config.vm.provision 'create-pools', type: 'shell', run: 'never', inline: <<-SHELL
+        echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.blockDevices | to_entries | map(.value) | map(select(.isMpath)) | map(select(.size | tonumber == #{disk_size})) | map(.paths | .[2]) | .[]' | xargs zpool create #{pool_name} -o multihost=on
+      SHELL
     end
   end
 
   #
   # Create the object storage servers (OSS)
   # Servers are configured in HA pairs
-  # By default, only the first 2 nodes are created
-  # To instantiate oss3 and oss4, use this command:
-  #   vagrant up oss{3,4}
   #
-  (1..4).each do |i|
+  (1..2).each do |i|
     config.vm.define "oss#{i}",
                      autostart: i <= 2 do |oss|
 
@@ -380,6 +384,11 @@ __EOF
       install_lustre_zfs oss
 
       install_lustre_ldiskfs oss
+
+      config.vm.provision 'create-pools', type: 'shell', run: 'never', inline: <<-SHELL
+      slice=#{i == 1 ? '0:10' : '10:20'}
+      echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r ".blockDevices | to_entries | map(.value) |  map(select(.isMpath)) | map(.paths | .[2]) | .[$slice] | .[]" | xargs zpool create oss#{i} -o multihost=on raidz2
+      SHELL
     end
   end
 

@@ -118,6 +118,7 @@ def install_lustre_zfs(config)
   config.vm.provision 'install-lustre-zfs', type: 'shell', run: 'never', inline: <<-SHELL
     yum clean all
     yum install -y lustre-zfs
+    genhostid
   SHELL
 end
 
@@ -125,6 +126,7 @@ def install_lustre_ldiskfs(config)
   config.vm.provision 'install-lustre-ldiskfs', type: 'shell', run: 'never', inline: <<-SHELL
     yum clean all
     yum install -y lustre-ldiskfs
+    genhostid
   SHELL
 end
 

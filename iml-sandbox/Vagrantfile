@@ -110,7 +110,6 @@ def configure_lustre_network(config)
     systemctl enable ntpd;
     modprobe lnet
     lnetctl lnet configure
-    lnetctl net del --net tcp0
     lnetctl net add --net tcp0 --if eth1
   SHELL
 end

@@ -330,6 +330,26 @@ __EOF
       config.vm.provision 'create-pools', type: 'shell', run: 'never', inline: <<-SHELL
         echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.blockDevices | to_entries | map(.value) | map(select(.isMpath)) | map(select(.size | tonumber == #{disk_size})) | map(.paths | .[2]) | .[]' | xargs zpool create #{pool_name} -o multihost=on
       SHELL
+
+      if i == 1
+        config.vm.provision 'create-zfs-fs',
+                            type: 'shell',
+                            run: 'never',
+                            inline: <<-SHELL
+                              mkfs.lustre --failover 10.73.20.12@tcp --mgs --backfstype=zfs mgs/mgt
+                              mkdir -p /lustre/mgs
+                              mount -t lustre mgs/mgt /lustre/mgs
+                            SHELL
+      else
+        config.vm.provision 'create-zfs-fs',
+                            type: 'shell',
+                            run: 'never',
+                            inline: <<-SHELL
+                              mkfs.lustre --failover 10.73.20.11@tcp --mdt --backfstype=zfs --fsname=zfsmo --index=0 --mgsnode=10.73.20.11@tcp mds/mdt0
+                              mkdir -p /lustre/zfsmo/mdt0
+                              mount -t lustre mds/mdt0 /lustre/zfsmo/mdt0
+                            SHELL
+      end
     end
   end
 
@@ -385,10 +405,33 @@ __EOF
 
       install_lustre_ldiskfs oss
 
-      config.vm.provision 'create-pools', type: 'shell', run: 'never', inline: <<-SHELL
+      config.vm.provision 'create-pools',
+                          type: 'shell',
+                          run: 'never',
+                          inline: <<-SHELL
       slice=#{i == 1 ? '0:10' : '10:20'}
       echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r ".blockDevices | to_entries | map(.value) |  map(select(.isMpath)) | map(.paths | .[2]) | .[$slice] | .[]" | xargs zpool create oss#{i} -o multihost=on raidz2
       SHELL
+
+      if i == 1
+        config.vm.provision 'create-zfs-fs',
+                            type: 'shell',
+                            run: 'never',
+                            inline: <<-SHELL
+                              mkfs.lustre --failover 10.73.20.22@tcp --ost --backfstype=zfs --fsname=zfsmo --index=0 --mgsnode=10.73.20.11@tcp oss1/ost00
+                              mkdir -p /lustre/zfsmo/ost00
+                              mount -t lustre oss1/ost00 /lustre/zfsmo/ost00
+                            SHELL
+      else
+        config.vm.provision 'create-zfs-fs',
+                            type: 'shell',
+                            run: 'never',
+                            inline: <<-SHELL
+                              mkfs.lustre --failover  10.73.20.21@tcp --ost --backfstype=zfs --fsname=zfsmo --index=1 --mgsnode=10.73.20.11@tcp oss2/ost01
+                              mkdir -p /lustre/zfsmo/ost01
+                              mount -t lustre oss2/ost01 /lustre/zfsmo/ost01
+                            SHELL
+      end
     end
   end
 

@@ -129,6 +129,18 @@ def install_lustre_ldiskfs(config)
   SHELL
 end
 
+def get_mds_block_device(size)
+  <<-SHELL
+    echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.blockDevices | to_entries | map(.value) | map(select(.isMpath)) | map(select(.size | tonumber == '#{size}')) | map(.paths | .[2]) | .[]'
+  SHELL
+end
+
+def get_oss_block_device(slice, idxOrEmpty)
+  <<-SHELL
+    echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.blockDevices | to_entries | map(.value) |  map(select(.isMpath)) | map(.paths | .[2]) | .[#{slice}] | .[#{idxOrEmpty}]'
+  SHELL
+end
+
 Vagrant.configure('2') do |config|
   config.vm.box = 'centos/7'
 
@@ -327,9 +339,14 @@ __EOF
       disk_size = (i == 1 ? '536870912' : '5368709120')
       pool_name = (i == 1 ? 'mgs' : 'mds')
 
-      config.vm.provision 'create-pools', type: 'shell', run: 'never', inline: <<-SHELL
-        echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.blockDevices | to_entries | map(.value) | map(select(.isMpath)) | map(select(.size | tonumber == #{disk_size})) | map(.paths | .[2]) | .[]' | xargs zpool create #{pool_name} -o multihost=on
-      SHELL
+      config.vm.provision 'create-pools', 
+                          type: 'shell', 
+                          run: 'never', 
+                          env: { "device_query" => get_mds_block_device(disk_size) },
+                          inline: <<-SHELL
+                            block_device=$(eval $device_query)
+                            zpool create #{pool_name} -o multihost=on $block_device
+                          SHELL
 
       if i == 1
         config.vm.provision 'create-zfs-fs',
@@ -340,6 +357,18 @@ __EOF
                               mkdir -p /lustre/mgs
                               mount -t lustre mgs/mgt /lustre/mgs
                             SHELL
+
+        config.vm.provision 'create-ldiskfs-fs',
+                            type: 'shell',
+                            run: 'never',
+                            env: { "device_query" => get_mds_block_device(disk_size) },
+                            inline: <<-SHELL
+                              mkdir -p /mnt/mgs
+                              block_device=$(eval $device_query)
+                              mkfs.lustre --mgs --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp $block_device
+                              mount -t lustre $block_device /mnt/mgs
+                            SHELL
+                            
       else
         config.vm.provision 'create-zfs-fs',
                             type: 'shell',
@@ -348,6 +377,17 @@ __EOF
                               mkfs.lustre --failover 10.73.20.11@tcp --mdt --backfstype=zfs --fsname=zfsmo --index=0 --mgsnode=10.73.20.11@tcp mds/mdt0
                               mkdir -p /lustre/zfsmo/mdt0
                               mount -t lustre mds/mdt0 /lustre/zfsmo/mdt0
+                            SHELL
+
+        config.vm.provision 'create-ldiskfs-fs',
+                            type: 'shell',
+                            run: 'never',
+                            env: { "device_query" => get_mds_block_device(disk_size) },
+                            inline: <<-SHELL
+                              mkdir -p /mnt/mds
+                              block_device=$(eval $device_query)
+                              mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs $block_device
+                              mount -t lustre $block_device /mnt/mds
                             SHELL
       end
     end
@@ -387,6 +427,8 @@ __EOF
       # each HA pair has a unique "crossover" subnet
       xnet_idx += 1 if i.even?
 
+      slice = i == 1 ? '0:10' : '10:20'
+
       fix_hostfile oss
 
       provision_mdns oss, 'eth2'
@@ -404,14 +446,15 @@ __EOF
       install_lustre_zfs oss
 
       install_lustre_ldiskfs oss
-
+      
       config.vm.provision 'create-pools',
                           type: 'shell',
                           run: 'never',
+                          env: { "device_query" => get_oss_block_device(slice, '') },
                           inline: <<-SHELL
-      slice=#{i == 1 ? '0:10' : '10:20'}
-      echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r ".blockDevices | to_entries | map(.value) |  map(select(.isMpath)) | map(.paths | .[2]) | .[$slice] | .[]" | xargs zpool create oss#{i} -o multihost=on raidz2
-      SHELL
+                            block_device=$(eval $device_query)
+                            zpool create oss#{i} -o multihost=on raidz2 $block_device
+                          SHELL
 
       if i == 1
         config.vm.provision 'create-zfs-fs',
@@ -422,6 +465,16 @@ __EOF
                               mkdir -p /lustre/zfsmo/ost00
                               mount -t lustre oss1/ost00 /lustre/zfsmo/ost00
                             SHELL
+        config.vm.provision 'create-ldiskfs-fs',
+                            type: 'shell',
+                            run: 'never',
+                            env: { "device_query" => get_oss_block_device(slice, 0) },
+                            inline: <<-SHELL
+                              mkdir -p /mnt/ost#{i}
+                              block_device=$(eval $device_query)
+                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs $block_device
+                              mount -t lustre $block_device /mnt/ost#{i}
+                            SHELL
       else
         config.vm.provision 'create-zfs-fs',
                             type: 'shell',
@@ -431,6 +484,18 @@ __EOF
                               mkdir -p /lustre/zfsmo/ost01
                               mount -t lustre oss2/ost01 /lustre/zfsmo/ost01
                             SHELL
+        config.vm.provision 'create-ldiskfs-fs',
+                            type: 'shell',
+                            run: 'never',
+                            env: { "device_query" => get_oss_block_device(slice, 1) },
+                            inline: <<-SHELL
+                              mkdir -p /mnt/ost#{i}
+                              block_device=$(eval $device_query)
+                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=1 --mgsnode=10.73.20.11@tcp --fsname=fs $block_device
+                              mount -t lustre $block_device /mnt/ost#{i}
+                            SHELL
+
+
       end
     end
   end

@@ -1,0 +1,36 @@
+# vi: set ft=ruby :
+Vagrant.configure("2") do |config|
+  config.vm.box = "manager-for-lustre/lustre-mellanox-el75"
+  config.vm.box_version = "0.0.1"
+  config.vbguest.auto_update = false
+  config.vm.synced_folder '.', '/vagrant', disabled: true
+  config.ssh.username = "root"
+  config.ssh.password = "vagrant"
+  config.ssh.insert_key = "true"
+
+  config.vm.provision 'build-mellanox',
+                      type: 'shell',
+                      run: 'never',
+                      env: { 'MLNX_OFED_LINUX' => ENV['MLNX_OFED_LINUX'] },
+                      inline: <<-SHELL
+                        cd /tmp
+                        tar xvf $MLNX_OFED_LINUX
+                        cd MLNX_OFED_LINUX-*-rhel7.5-x86_64/
+                        ./mlnxofedinstall --add-kernel-support
+                        cd /tmp/MLNX_OFED_LINUX*_lustre.x86_64
+                        tar xvf MLNX_OFED_LINUX*-ext.tgz
+                      SHELL
+
+  config.vm.provision 'build-lustre-rpms',
+                      type: 'shell',
+                      run: 'never',
+                      env: { 'branch' => ENV['LUSTRE_BRANCH'] },
+                      inline: <<-SHELL
+                        cd /tmp
+                        git clone git://git.whamcloud.com/fs/lustre-release.git
+                        cd lustre-release
+                        git checkout $LUSTRE_BRANCH
+                        sh autogen.sh && ./configure && make rpms dkms-rpm
+                      SHELL
+end
+

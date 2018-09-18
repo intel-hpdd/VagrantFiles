@@ -69,8 +69,7 @@ def provision_mdns(config, iface)
     yum install -y avahi nss-mdns
     sed -i 's/^#allow-interfaces=.*/allow-interfaces=#{iface}/' /etc/avahi/avahi-daemon.conf
     systemctl restart network
-    systemctl enable avahi-daemon.socket
-    systemctl start avahi-daemon.socket
+    systemctl enable --now avahi-daemon.socket
     systemctl start avahi-daemon.service
     systemctl status avahi-daemon.service
   SHELL
@@ -348,7 +347,7 @@ __EOF
 
       install_ldiskfs_no_iml mds
 
-      pool_name = (i == 1 ? 'mgs' : 'mds')
+      pool_name = (i == 1 ? 'mgt' : 'mdt')
 
       config.vm.provision 'create-pools',
                           type: 'shell',
@@ -402,9 +401,9 @@ SHELL
                             type: 'shell',
                             run: 'never',
                             inline: <<-SHELL
-                              mkdir -p /mnt/mds
+                              mkdir -p /mnt/mdt
                               mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mdt
-                              mount -t lustre /dev/mds /mnt/mdt
+                              mount -t lustre /dev/mdt /mnt/mdt
                             SHELL
       end
     end
@@ -514,7 +513,6 @@ SHELL
                               mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=1 --mgsnode=10.73.20.11@tcp --fsname=fs $block_device
                               mount -t lustre $block_device /mnt/ost#{i}
                             SHELL
-
 
       end
     end

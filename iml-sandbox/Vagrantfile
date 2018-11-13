@@ -1,6 +1,8 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+require 'open3'
+
 # Create a set of /24 networks under a single /16 subnet range
 SUBNET_PREFIX = '10.73'.freeze
 
@@ -19,137 +21,6 @@ ISCI_IP = "#{SUBNET_PREFIX}.40.10".freeze
 
 ISCI_IP2 = "#{SUBNET_PREFIX}.50.10".freeze
 
-def provision_iscsi_net(config, num)
-  config.vm.network 'private_network',
-                    ip: "#{SUBNET_PREFIX}.40.#{num}",
-                    netmask: '255.255.255.0',
-                    virtualbox__intnet: 'iscsi-net'
-
-  config.vm.network 'private_network',
-                    ip: "#{SUBNET_PREFIX}.50.#{num}",
-                    netmask: '255.255.255.0',
-                    virtualbox__intnet: 'iscsi-net'
-end
-
-def provision_lnet_net(config, num)
-  config.vm.network 'private_network',
-                    ip: "#{LNET_PFX}.#{num}",
-                    netmask: '255.255.255.0',
-                    virtualbox__intnet: 'lnet-net'
-end
-
-def provision_mgmt_net(config, num)
-  config.vm.network 'private_network',
-                    ip: "#{MGMT_NET_PFX}.#{num}",
-                    netmask: '255.255.255.0',
-                    name: 'vboxnet0'
-end
-
-def provision_mpath(config)
-  config.vm.provision 'mpath', type: 'shell', inline: <<-SHELL
-    yum -y install device-mapper-multipath
-    cp /usr/share/doc/device-mapper-multipath-*/multipath.conf /etc/multipath.conf
-    systemctl start multipathd.service
-    systemctl enable multipathd.service
-  SHELL
-end
-
-def provision_fence_agents(config)
-  config.vm.provision 'fence-agents', type: 'shell', inline: <<-SHELL
-    yum install -y epel-release
-    yum install -y yum-plugin-copr
-    yum -y copr enable managerforlustre/manager-for-lustre-devel
-    yum install -y fence-agents-vbox
-  SHELL
-end
-
-def provision_mdns(config, iface)
-  config.vm.provision 'mdns', type: 'shell', inline: <<-SHELL
-    yum install -y epel-release
-    yum install -y avahi nss-mdns
-    sed -i 's/^#allow-interfaces=.*/allow-interfaces=#{iface}/' /etc/avahi/avahi-daemon.conf
-    systemctl restart network
-    systemctl enable --now avahi-daemon.socket
-    systemctl start avahi-daemon.service
-    systemctl status avahi-daemon.service
-  SHELL
-end
-
-def cleanup_storage_server(config)
-  config.vm.provision 'cleanup', type: 'shell', run: 'never', inline: <<-SHELL
-    yum autoremove -y chroma-agent
-    rm -rf /etc/iml
-    rm -rf /var/lib/{chroma,iml}
-    rm -rf /etc/yum.repos.d/Intel-Lustre-Agent.repo
-  SHELL
-end
-
-def provision_iscsi_client(config, name, idx)
-  config.vm.provision 'iscsi-client', type: 'shell', inline: <<-SHELL
-    yum -y install iscsi-initiator-utils lsscsi
-    echo "InitiatorName=iqn.2015-01.com.whamcloud:#{name}#{idx}" > /etc/iscsi/initiatorname.iscsi
-    iscsiadm --mode discoverydb --type sendtargets --portal #{ISCI_IP}:3260 --discover
-    iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP}:3260 -o update -n node.startup -v automatic
-    iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP}:3260 -o update -n node.conn[0].startup -v automatic
-    iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP2}:3260 -o update -n node.startup -v automatic
-    iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP2}:3260 -o update -n node.conn[0].startup -v automatic
-    systemctl start iscsi
-  SHELL
-end
-
-def fix_hostfile(config)
-  config.vm.provision 'fix-hosts',
-                      type: 'shell',
-                      inline: "sed  -i '/^127.0.0.1\t#{config.vm.hostname}*/d' /etc/hosts"
-end
-
-def configure_lustre_network(config)
-  config.vm.provision 'configure-lustre-network',
-                      type: 'shell',
-                      run: 'never',
-                      inline: <<-SHELL
-                        modprobe lnet
-                        lnetctl lnet configure
-                        lnetctl net add --net tcp0 --if eth1
-                        lnetctl net show --net tcp > /etc/lnet.conf
-                        systemctl enable lnet.service
-                      SHELL
-end
-
-def install_lustre_zfs(config)
-  config.vm.provision 'install-lustre-zfs', type: 'shell', run: 'never', inline: <<-SHELL
-    yum clean all
-    yum install -y lustre-zfs
-    genhostid
-  SHELL
-end
-
-def install_lustre_ldiskfs(config)
-  config.vm.provision 'install-lustre-ldiskfs', type: 'shell', run: 'never', inline: <<-SHELL
-    yum clean all
-    yum install -y lustre-ldiskfs
-  SHELL
-end
-
-def install_ldiskfs_no_iml(config)
-  config.vm.provision 'install-ldiskfs-no-iml', type: 'shell', run: 'never', inline: <<-SHELL
-    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/lustre/latest-release/el7/server
-    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/e2fsprogs/latest/el7/
-    yum-config-manager --save --setopt='*.gpgcheck=1' downloads.whamcloud.com_public_e2fsprogs_latest_el7_
-    yum-config-manager --save --setopt='*.gpgcheck=0' downloads.whamcloud.com_public_e2fsprogs_latest_el7_
-    yum-config-manager --save --setopt='*.gpgcheck=1' downloads.whamcloud.com_public_lustre_latest-release_el7_server
-    yum-config-manager --save --setopt='*.gpgcheck=0' downloads.whamcloud.com_public_lustre_latest-release_el7_server
-    yum install -y lustre kmod-lustre-osd-ldiskfs ntp
-    systemctl enable --now ntpd
-  SHELL
-end
-
-def get_oss_block_device(slice, idxOrEmpty)
-  <<-SHELL
-    echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.blockDevices | to_entries | map(.value) |  map(select(.isMpath)) | map(.paths | .[2]) | .[#{slice}] | .[#{idxOrEmpty}]'
-  SHELL
-end
-
 Vagrant.configure('2') do |config|
   config.vm.box = 'centos/7'
 
@@ -157,12 +28,12 @@ Vagrant.configure('2') do |config|
     vbx.linked_clone = true
     vbx.memory = 1024
     vbx.cpus = 4
+    vbx.customize ['modifyvm', :id, '--audio', 'none']
   end
 
   config.vm.provision 'deps', type: 'shell', inline: <<-SHELL
     yum install -y epel-release
-    yum update -y
-    yum install -y jq htop psmisc
+    yum install -y jq htop
   SHELL
 
   system("ssh-keygen -t rsa -N '' -f id_rsa") unless File.exist?('id_rsa')
@@ -182,49 +53,13 @@ __EOF
   SHELL
 
   config.vm.define 'iscsi' do |iscsi|
-    iscsi.vm.box = 'manager-for-lustre/centos75-1804-base'
     iscsi.vm.hostname = 'iscsi.local'
 
     fix_hostfile iscsi
     provision_iscsi_net iscsi, '10'
 
     iscsi.vm.provider 'virtualbox' do |vbx|
-      dir = "#{ENV['HOME']}/VirtualBox\ VMs/vdisks"
-      Dir.mkdir dir unless File.directory?(dir)
-
-      osts = (1..20).map { |x| ["OST#{x}", '5120'] }
-
-      [
-        %w[mgt 512],
-        %w[mdt0 5120]
-      ].concat(osts).each_with_index do |(name, size), i|
-        file_to_disk = "#{dir}/#{name}.vdi"
-        port = (i + 1).to_s
-
-        unless File.exist?(file_to_disk)
-          vbx.customize ['createmedium',
-                         'disk',
-                         '--filename',
-                         file_to_disk,
-                         '--size',
-                         size,
-                         '--format',
-                         'VDI',
-                         '--variant',
-                         'fixed']
-        end
-
-        vbx.customize ['storageattach', :id,
-                       '--storagectl', 'SATA Controller',
-                       '--port', port,
-                       '--type', 'hdd',
-                       '--medium', file_to_disk,
-                       '--device', '0']
-
-        vbx.customize ['setextradata', :id,
-                       "VBoxInternal/Devices/ahci/0/Config/Port#{port}/SerialNumber",
-                       name.ljust(20, '0')]
-      end
+      create_iscsi_disks(vbx, iscsi.vm.hostname)
     end
 
     ost_commands = ('d'..'z')
@@ -267,7 +102,6 @@ __EOF
     adm.vm.hostname = 'adm.local'
 
     adm.vm.network 'forwarded_port', guest: 443, host: 8443
-    adm.vm.network 'forwarded_port', guest: 8080, host: 8081
 
     # Admin / management network
     provision_mgmt_net adm, '10'
@@ -278,23 +112,27 @@ __EOF
 
     # Install IML onto the admin node
     # Using the devel repo from Copr
-    adm.vm.provision 'install-iml-devel-copr', type: 'shell', run: 'never', inline: <<-SHELL
-      yum-config-manager --add-repo=https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/master/chroma_support.repo
-      yum install -y python2-iml-manager
-      chroma-config setup admin lustre localhost --no-dbspace-check
-    SHELL
+    adm.vm.provision 'install-iml-devel-copr',
+                     type: 'shell', run: 'never',
+                     inline: <<-SHELL
+                      yum-config-manager --add-repo=https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/master/chroma_support.repo
+                      yum install -y python2-iml-manager
+                      chroma-config setup admin lustre localhost --no-dbspace-check
+                     SHELL
 
     # Install IML onto the admin node
     # This requires you have the IML source tree available at
     # /integrated-manager-for-lustre
-    adm.vm.provision 'install-iml-local', type: 'shell', run: 'never', inline: <<-SHELL
-      yum-config-manager --add-repo=https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/master/chroma_support.repo
-      yum install -y rpmdevtools git ed epel-release python-setuptools
-      cd /integrated-manager-for-lustre
-      make rpms
-      yum install -y /integrated-manager-for-lustre/_topdir/RPMS/noarch/python2-iml-manager-*
-      chroma-config setup admin lustre localhost
-    SHELL
+    adm.vm.provision 'install-iml-local',
+                     type: 'shell', run: 'never',
+                     inline: <<-SHELL
+                       yum-config-manager --add-repo=https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/master/chroma_support.repo
+                       yum install -y rpmdevtools git ed epel-release python-setuptools
+                       cd /integrated-manager-for-lustre
+                       make rpms
+                       yum install -y /integrated-manager-for-lustre/_topdir/RPMS/noarch/python2-iml-manager-*
+                       chroma-config setup admin lustre localhost
+                     SHELL
   end
 
   #
@@ -468,7 +306,7 @@ SHELL
       config.vm.provision 'create-pools',
                           type: 'shell',
                           run: 'never',
-                          env: { "device_query" => get_oss_block_device(slice, '') },
+                          env: { 'device_query' => get_oss_block_device(slice, '') },
                           inline: <<-SHELL
                             block_device=$(eval $device_query)
                             zpool create oss#{i} -o multihost=on raidz2 $block_device
@@ -487,7 +325,7 @@ SHELL
         config.vm.provision 'create-ldiskfs-fs',
                             type: 'shell',
                             run: 'never',
-                            env: { "device_query" => get_oss_block_device(slice, 0) },
+                            env: { 'device_query' => get_oss_block_device(slice, 0) },
                             inline: <<-SHELL
                               mkdir -p /mnt/ost#{i}
                               block_device=$(eval $device_query)
@@ -506,7 +344,7 @@ SHELL
         config.vm.provision 'create-ldiskfs-fs',
                             type: 'shell',
                             run: 'never',
-                            env: { "device_query" => get_oss_block_device(slice, 1) },
+                            env: { 'device_query' => get_oss_block_device(slice, 1) },
                             inline: <<-SHELL
                               mkdir -p /mnt/ost#{i}
                               block_device=$(eval $device_query)
@@ -535,13 +373,204 @@ SHELL
       config.vm.provision 'install-lustre-client',
                           type: 'shell',
                           inline: <<-SHELL
-                            yum-config-manager --add-repo https://downloads.whamcloud.com/public/lustre/lustre-2.10.4/el7/client/
-                            yum-config-manager --save --setopt='*.gpgcheck=1' downloads.whamcloud.com_public_lustre_lustre-2.10.4_el7_client_
-                            yum-config-manager --save --setopt='*.gpgcheck=0' downloads.whamcloud.com_public_lustre_lustre-2.10.4_el7_client_
+                            yum-config-manager --add-repo https://downloads.whamcloud.com/public/lustre/lustre-2.10.5/el7/client/
+                            yum-config-manager --save --setopt='*.gpgcheck=1' downloads.whamcloud.com_public_lustre_lustre-2.10.5_el7_client_
+                            yum-config-manager --save --setopt='*.gpgcheck=0' downloads.whamcloud.com_public_lustre_lustre-2.10.5_el7_client_
                             yum -y install lustre-client
                           SHELL
 
       provision_mdns c, 'eth1'
     end
+  end
+end
+
+def provision_iscsi_net(config, num)
+  config.vm.network 'private_network',
+                    ip: "#{SUBNET_PREFIX}.40.#{num}",
+                    netmask: '255.255.255.0',
+                    virtualbox__intnet: 'iscsi-net'
+
+  config.vm.network 'private_network',
+                    ip: "#{SUBNET_PREFIX}.50.#{num}",
+                    netmask: '255.255.255.0',
+                    virtualbox__intnet: 'iscsi-net'
+end
+
+def provision_lnet_net(config, num)
+  config.vm.network 'private_network',
+                    ip: "#{LNET_PFX}.#{num}",
+                    netmask: '255.255.255.0',
+                    virtualbox__intnet: 'lnet-net'
+end
+
+def provision_mgmt_net(config, num)
+  config.vm.network 'private_network',
+                    ip: "#{MGMT_NET_PFX}.#{num}",
+                    netmask: '255.255.255.0',
+                    name: 'vboxnet0'
+end
+
+def provision_mpath(config)
+  config.vm.provision 'mpath', type: 'shell', inline: <<-SHELL
+    yum -y install device-mapper-multipath
+    cp /usr/share/doc/device-mapper-multipath-*/multipath.conf /etc/multipath.conf
+    systemctl start multipathd.service
+    systemctl enable multipathd.service
+  SHELL
+end
+
+def provision_fence_agents(config)
+  config.vm.provision 'fence-agents', type: 'shell', inline: <<-SHELL
+    yum install -y epel-release
+    yum install -y yum-plugin-copr
+    yum -y copr enable managerforlustre/manager-for-lustre-devel
+    yum install -y fence-agents-vbox
+  SHELL
+end
+
+def provision_mdns(config, iface)
+  config.vm.provision 'mdns', type: 'shell', inline: <<-SHELL
+    yum install -y epel-release
+    yum install -y avahi nss-mdns
+    sed -i 's/^#allow-interfaces=.*/allow-interfaces=#{iface}/' /etc/avahi/avahi-daemon.conf
+    systemctl restart network
+    systemctl enable --now avahi-daemon.socket
+    systemctl start avahi-daemon.service
+    systemctl status avahi-daemon.service
+  SHELL
+end
+
+def cleanup_storage_server(config)
+  config.vm.provision 'cleanup', type: 'shell', run: 'never', inline: <<-SHELL
+    yum autoremove -y chroma-agent
+    rm -rf /etc/iml
+    rm -rf /var/lib/{chroma,iml}
+    rm -rf /etc/yum.repos.d/Intel-Lustre-Agent.repo
+  SHELL
+end
+
+def provision_iscsi_client(config, name, idx)
+  config.vm.provision 'iscsi-client', type: 'shell', inline: <<-SHELL
+    yum -y install iscsi-initiator-utils lsscsi
+    echo "InitiatorName=iqn.2015-01.com.whamcloud:#{name}#{idx}" > /etc/iscsi/initiatorname.iscsi
+    iscsiadm --mode discoverydb --type sendtargets --portal #{ISCI_IP}:3260 --discover
+    iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP}:3260 -o update -n node.startup -v automatic
+    iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP}:3260 -o update -n node.conn[0].startup -v automatic
+    iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP2}:3260 -o update -n node.startup -v automatic
+    iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP2}:3260 -o update -n node.conn[0].startup -v automatic
+    systemctl start iscsi
+  SHELL
+end
+
+def fix_hostfile(config)
+  config.vm.provision 'fix-hosts',
+                      type: 'shell',
+                      inline: "sed  -i '/^127.0.0.1\t#{config.vm.hostname}*/d' /etc/hosts"
+end
+
+def configure_lustre_network(config)
+  config.vm.provision 'configure-lustre-network',
+                      type: 'shell',
+                      run: 'never',
+                      inline: <<-SHELL
+                        modprobe lnet
+                        lnetctl lnet configure
+                        lnetctl net add --net tcp0 --if eth1
+                        lnetctl net show --net tcp > /etc/lnet.conf
+                        systemctl enable lnet.service
+                      SHELL
+end
+
+def install_lustre_zfs(config)
+  config.vm.provision 'install-lustre-zfs', type: 'shell', run: 'never', inline: <<-SHELL
+    yum clean all
+    yum install -y lustre-zfs
+    genhostid
+  SHELL
+end
+
+def install_lustre_ldiskfs(config)
+  config.vm.provision 'install-lustre-ldiskfs', type: 'shell', run: 'never', inline: <<-SHELL
+    yum clean all
+    yum install -y lustre-ldiskfs
+  SHELL
+end
+
+def install_ldiskfs_no_iml(config)
+  config.vm.provision 'install-ldiskfs-no-iml', type: 'shell', run: 'never', inline: <<-SHELL
+    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/lustre/latest-release/el7/server
+    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/e2fsprogs/latest/el7/
+    yum-config-manager --save --setopt='*.gpgcheck=1' downloads.whamcloud.com_public_e2fsprogs_latest_el7_
+    yum-config-manager --save --setopt='*.gpgcheck=0' downloads.whamcloud.com_public_e2fsprogs_latest_el7_
+    yum-config-manager --save --setopt='*.gpgcheck=1' downloads.whamcloud.com_public_lustre_latest-release_el7_server
+    yum-config-manager --save --setopt='*.gpgcheck=0' downloads.whamcloud.com_public_lustre_latest-release_el7_server
+    yum install -y lustre kmod-lustre-osd-ldiskfs ntp
+    systemctl enable --now ntpd
+  SHELL
+end
+
+def get_oss_block_device(slice, idxOrEmpty)
+  <<-SHELL
+    echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.blockDevices | to_entries | map(.value) |  map(select(.isMpath)) | map(.paths | .[2]) | .[#{slice}] | .[#{idxOrEmpty}]'
+  SHELL
+end
+
+# Checks if a scsi controller exists.
+# This is used as a predicate to create controllers, as vagrant does not provide this
+# functionality by default.
+def controller_exists(name, controller_name)
+  out, err = Open3.capture2e("VBoxManage showvminfo #{name}")
+
+  return false if err.exitstatus != 0
+
+  out.split(/\n/)
+     .select { |x| x.start_with? 'Storage Controller Name' }
+     .map { |x| x.split(':')[1].strip }
+     .any? { |x| x == controller_name }
+end
+
+# Creates a SATA Controller and attaches 10 disks to it
+def create_iscsi_disks(vbox, name)
+  unless controller_exists(name, 'SATA Controller')
+    vbox.customize ['storagectl', :id,
+                    '--name', 'SATA Controller',
+                    '--add', 'sata']
+  end
+
+  dir = "#{ENV['HOME']}/VirtualBox\ VMs/vdisks"
+  Dir.mkdir dir unless File.directory?(dir)
+
+  osts = (1..20).map { |x| ["OST#{x}", '5120'] }
+
+  [
+    %w[mgt 512],
+    %w[mdt0 5120]
+  ].concat(osts).each_with_index do |(name, size), i|
+    file_to_disk = "#{dir}/#{name}.vdi"
+    port = (i + 1).to_s
+
+    unless File.exist?(file_to_disk)
+      vbox.customize ['createmedium',
+                     'disk',
+                     '--filename',
+                     file_to_disk,
+                     '--size',
+                     size,
+                     '--format',
+                     'VDI',
+                     '--variant',
+                     'fixed']
+    end
+
+    vbox.customize ['storageattach', :id,
+                   '--storagectl', 'SATA Controller',
+                   '--port', port,
+                   '--type', 'hdd',
+                   '--medium', file_to_disk,
+                   '--device', '0']
+
+    vbox.customize ['setextradata', :id,
+                   "VBoxInternal/Devices/ahci/0/Config/Port#{port}/SerialNumber",
+                   name.ljust(20, '0')]
   end
 end

@@ -4,7 +4,7 @@ Vagrant.configure("2") do |config|
 	# Use box from Manager For Lustre project - this differs from the
 	# "official" CentOS base box by using a SATA controller instead of IDE.
 	# This simplifies the addition of extra disks for the storage servers.
-	config.vm.box = "manager-for-lustre/centos75-1804-base"
+	config.vm.box = "manager-for-lustre/centos76-1810-base"
 
 	# Set the default RAM allocation for each VM.
 	# 1GB is sufficient for demo and training purposes.

@@ -59,7 +59,8 @@ __EOF
     provision_iscsi_net iscsi, '10'
 
     iscsi.vm.provider 'virtualbox' do |vbx|
-      create_iscsi_disks(vbx, iscsi.vm.hostname)
+      vbx.name = 'iscsi'
+      create_iscsi_disks(vbx)
     end
 
     ost_commands = ('d'..'z')
@@ -100,6 +101,10 @@ __EOF
   #
   config.vm.define 'adm', primary: true do |adm|
     adm.vm.hostname = 'adm.local'
+
+    adm.vm.provider 'virtualbox' do |vbx|
+      vbx.name = 'adm'
+    end
 
     adm.vm.network 'forwarded_port', guest: 443, host: 8443
 
@@ -530,8 +535,8 @@ def controller_exists(name, controller_name)
 end
 
 # Creates a SATA Controller and attaches 10 disks to it
-def create_iscsi_disks(vbox, name)
-  unless controller_exists(name, 'SATA Controller')
+def create_iscsi_disks(vbox)
+  unless controller_exists(vbox.name, 'SATA Controller')
     vbox.customize ['storagectl', :id,
                     '--name', 'SATA Controller',
                     '--add', 'sata']

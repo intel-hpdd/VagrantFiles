@@ -516,17 +516,6 @@ def get_oss_block_device(slice, idxOrEmpty)
   SHELL
 end
 
-# Creates a unique name based on the path of the vagrant file and the name of the vm
-def create_name(path, name)
-  prefix = "#{path}_#{name}"
-  prefix.gsub!(/[^-a-z0-9_]/i, "")
-
-  # milliseconds + random number suffix to allow for simultaneous
-  # `vagrant up` of the same box in different dirs
-  name = prefix + "_#{(Time.now.to_f * 1000.0).to_i}_#{rand(100000)}"
-  name
-end 
-
 def get_vm_name(id)
   out, err = Open3.capture2e("VBoxManage list vms")
 

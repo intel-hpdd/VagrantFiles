@@ -59,7 +59,8 @@ __EOF
     provision_iscsi_net iscsi, '10'
 
     iscsi.vm.provider 'virtualbox' do |vbx|
-      vbx.name = 'iscsi'
+      path = File.dirname(__FILE__).split('/').last
+      vbx.name = create_name(path, 'iscsi')
       create_iscsi_disks(vbx)
     end
 
@@ -101,10 +102,6 @@ __EOF
   #
   config.vm.define 'adm', primary: true do |adm|
     adm.vm.hostname = 'adm.local'
-
-    adm.vm.provider 'virtualbox' do |vbx|
-      vbx.name = 'adm'
-    end
 
     adm.vm.network 'forwarded_port', guest: 443, host: 8443
 
@@ -519,6 +516,17 @@ def get_oss_block_device(slice, idxOrEmpty)
     echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.blockDevices | to_entries | map(.value) |  map(select(.isMpath)) | map(.paths | .[2]) | .[#{slice}] | .[#{idxOrEmpty}]'
   SHELL
 end
+
+# Creates a unique name based on the path of the vagrant file and the name of the vm
+def create_name(path, name)
+  prefix = "#{path}_#{name}"
+  prefix.gsub!(/[^-a-z0-9_]/i, "")
+
+  # milliseconds + random number suffix to allow for simultaneous
+  # `vagrant up` of the same box in different dirs
+  name = prefix + "_#{(Time.now.to_f * 1000.0).to_i}_#{rand(100000)}"
+  name
+end 
 
 # Checks if a scsi controller exists.
 # This is used as a predicate to create controllers, as vagrant does not provide this

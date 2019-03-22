@@ -127,7 +127,7 @@ __EOF
     adm.vm.provision 'install-iml-local',
                      type: 'shell', run: 'never',
                      inline: <<-SHELL
-                       yum-config-manager --add-repo=https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/master/chroma_support.repo
+                       yum-config-manager --add-repo=/integrated-manager-for-lustre/chroma_support.repo
                        yum install -y rpmdevtools git ed epel-release python-setuptools
                        cd /integrated-manager-for-lustre
                        make rpms

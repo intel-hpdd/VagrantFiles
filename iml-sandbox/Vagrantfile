@@ -56,7 +56,7 @@ __EOF"
     yum install -y jq htop vim
   SHELL
 
-  system("ssh-keygen -t rsa -N '' -f id_rsa") unless File.exist?('id_rsa')
+  system("ssh-keygen -t rsa -m PEM -N '' -f id_rsa") unless File.exist?('id_rsa')
 
   config.vm.provision 'ssh', type: 'shell', inline: <<-SHELL
     mkdir -m 0700 -p /root/.ssh
@@ -208,6 +208,8 @@ __EOF
 
       install_ldiskfs_no_iml mds
 
+      configure_docker_network mds
+      
       pool_name = (i == 1 ? 'mg' : 'md')
 
       config.vm.provision 'create-pools',
@@ -321,6 +323,8 @@ SHELL
       install_ldiskfs_no_iml oss
 
       install_zfs_no_iml oss
+
+      configure_docker_network oss
 
       config.vm.provision 'create-pools',
                           type: 'shell',
@@ -599,4 +603,20 @@ def create_iscsi_disks(vbox, name)
                     "VBoxInternal/Devices/ahci/0/Config/Port#{port}/SerialNumber",
                     name.ljust(20, '0')]
   end
+end
+
+def configure_docker_network(config)
+  config.trigger.before :provision, name: "configure-docker-network-trigger" do |t|
+    t.ruby do |env, machine|
+      if ARGV[3] == 'configure-docker-network'
+        puts "Copying identify file to job scheduler container."
+        puts `docker ps --format '{{.Names}}' | grep job-scheduler | xargs -I {} docker exec {} sh -c 'mkdir -p /root/.ssh'`
+        puts `docker ps --format '{{.Names}}' | grep job-scheduler | xargs -I {} docker cp id_rsa {}:/root/.ssh`
+      end
+    end
+  end
+
+  config.vm.provision 'configure-docker-network', type: 'shell', run: 'never', inline: <<-SHELL
+    echo "10.73.10.1 nginx" >> /etc/hosts
+  SHELL
 end

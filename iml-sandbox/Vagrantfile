@@ -31,9 +31,34 @@ Vagrant.configure('2') do |config|
     vbx.customize ['modifyvm', :id, '--audio', 'none']
   end
 
+  # Create a basic hosts file for the VMs.
+  open('hosts', 'w') do |f|
+    f.puts <<-__EOF
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+
+#{MGMT_NET_PFX}.9 b.local b
+#{MGMT_NET_PFX}.10 adm.local adm
+#{MGMT_NET_PFX}.11 mds1.local mds1
+#{MGMT_NET_PFX}.12 mds2.local mds2
+#{MGMT_NET_PFX}.21 oss1.local oss1
+#{MGMT_NET_PFX}.22 oss2.local oss2
+#{MGMT_NET_PFX}.23 oss3.local oss3
+#{MGMT_NET_PFX}.24 oss4.local oss4
+    __EOF
+    (1..8).each do |cidx|
+      f.puts "#{MGMT_NET_PFX}.3#{cidx} c#{cidx}.lfs.local c#{cidx}\n"
+    end
+  end
+  config.vm.provision 'shell', inline: 'cp -f /vagrant/hosts /etc/hosts'
+  config.vm.provision 'shell', inline: "selinuxenabled && setenforce 0; cat >/etc/selinux/config<<__EOF
+SELINUX=disabled
+SELINUXTYPE=targeted
+__EOF"
+
   config.vm.provision 'deps', type: 'shell', inline: <<-SHELL
     yum install -y epel-release
-    yum install -y jq htop
+    yum install -y jq htop vim
   SHELL
 
   system("ssh-keygen -t rsa -N '' -f id_rsa") unless File.exist?('id_rsa')
@@ -55,11 +80,10 @@ __EOF
   config.vm.define 'iscsi' do |iscsi|
     iscsi.vm.hostname = 'iscsi.local'
 
-    fix_hostfile iscsi
     provision_iscsi_net iscsi, '10'
 
     iscsi.vm.provider 'virtualbox' do |vbx|
-      name = get_vm_name("iscsi")
+      name = get_vm_name('iscsi')
       create_iscsi_disks(vbx, name)
     end
 
@@ -106,8 +130,6 @@ __EOF
 
     # Admin / management network
     provision_mgmt_net adm, '10'
-
-    provision_mdns adm, 'eth1'
 
     provision_fence_agents adm
 
@@ -165,10 +187,6 @@ __EOF
       # Increment the "crossover" subnet number so that
       # each HA pair has a unique "crossover" subnet
       xnet_idx += 1 if i.even?
-
-      fix_hostfile mds
-
-      provision_mdns mds, 'eth2'
 
       provision_iscsi_client mds, 'mds', i
 
@@ -284,10 +302,6 @@ SHELL
 
       slice = i == 1 ? '0:10' : '10:20'
 
-      fix_hostfile oss
-
-      provision_mdns oss, 'eth2'
-
       provision_iscsi_client oss, 'oss', i
 
       provision_mpath oss
@@ -379,8 +393,6 @@ SHELL
                             yum-config-manager --save --setopt='*.gpgcheck=0' downloads.whamcloud.com_public_lustre_lustre-2.10.5_el7_client_
                             yum -y install lustre-client
                           SHELL
-
-      provision_mdns c, 'eth1'
     end
   end
 end
@@ -429,18 +441,6 @@ def provision_fence_agents(config)
   SHELL
 end
 
-def provision_mdns(config, iface)
-  config.vm.provision 'mdns', type: 'shell', inline: <<-SHELL
-    yum install -y epel-release
-    yum install -y avahi nss-mdns
-    sed -i 's/^#allow-interfaces=.*/allow-interfaces=#{iface}/' /etc/avahi/avahi-daemon.conf
-    systemctl restart network
-    systemctl enable --now avahi-daemon.socket
-    systemctl start avahi-daemon.service
-    systemctl status avahi-daemon.service
-  SHELL
-end
-
 def cleanup_storage_server(config)
   config.vm.provision 'cleanup', type: 'shell', run: 'never', inline: <<-SHELL
     yum autoremove -y chroma-agent
@@ -461,12 +461,6 @@ def provision_iscsi_client(config, name, idx)
     iscsiadm --mode node --targetname iqn.2015-01.com.whamcloud.lu:#{name} --portal #{ISCI_IP2}:3260 -o update -n node.conn[0].startup -v automatic
     systemctl start iscsi
   SHELL
-end
-
-def fix_hostfile(config)
-  config.vm.provision 'fix-hosts',
-                      type: 'shell',
-                      inline: "sed  -i '/^127.0.0.1\t#{config.vm.hostname}*/d' /etc/hosts"
 end
 
 def configure_lustre_network(config)
@@ -517,15 +511,15 @@ def get_oss_block_device(slice, idxOrEmpty)
 end
 
 def get_vm_name(id)
-  out, err = Open3.capture2e("VBoxManage list vms")
+  out, err = Open3.capture2e('VBoxManage list vms')
   raise out unless err.exitstatus === 0
-  
+
   path = path = File.dirname(__FILE__).split('/').last
   name = out.split(/\n/)
-     .select { |x| x.start_with? "\"#{path}_#{id}" }
-     .map { |x| x.tr('"', '')}
-     .map { |x| x.split(' ')[0].strip }
-     .first
+            .select { |x| x.start_with? "\"#{path}_#{id}" }
+            .map { |x| x.tr('"', '') }
+            .map { |x| x.split(' ')[0].strip }
+            .first
 
   name
 end

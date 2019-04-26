@@ -155,7 +155,7 @@ __EOF
                        make rpms
                        yum install -y /integrated-manager-for-lustre/_topdir/RPMS/noarch/python2-iml-manager-*
                        chroma-config setup admin lustre localhost --no-dbspace-check
-                     SHELL
+                     SHELL        
   end
 
   #
@@ -202,15 +202,17 @@ __EOF
 
       install_lustre_ldiskfs mds
 
+      install_zfs_no_iml mds
+
       install_ldiskfs_no_iml mds
 
-      pool_name = (i == 1 ? 'mgt' : 'mdt')
+      pool_name = (i == 1 ? 'mg' : 'md')
 
       config.vm.provision 'create-pools',
                           type: 'shell',
                           run: 'never',
                           inline: <<-SHELL
-                            zpool create #{pool_name} -o multihost=on /dev/#{pool_name}
+                            zpool create #{pool_name}s -o multihost=on /dev/#{pool_name}t
                           SHELL
 
       config.vm.provision 'add_udev_rule',
@@ -231,8 +233,8 @@ SHELL
                             run: 'never',
                             inline: <<-SHELL
                               mkfs.lustre --failover 10.73.20.12@tcp --mgs --backfstype=zfs mgs/mgt
-                              mkdir -p /lustre/mgs
-                              mount -t lustre mgs/mgt /lustre/mgs
+                              mkdir -p /lustre/zfsmo/mgs
+                              mount -t lustre mgs/mgt /lustre/zfsmo/mgs
                             SHELL
 
         config.vm.provision 'create-ldiskfs-fs',
@@ -318,10 +320,12 @@ SHELL
 
       install_ldiskfs_no_iml oss
 
+      install_zfs_no_iml oss
+
       config.vm.provision 'create-pools',
                           type: 'shell',
                           run: 'never',
-                          env: { 'device_query' => get_oss_block_device(slice, '') },
+                          env: { 'device_query' => get_oss_block_devices(slice) },
                           inline: <<-SHELL
                             block_device=$(eval $device_query)
                             zpool create oss#{i} -o multihost=on raidz2 $block_device
@@ -388,9 +392,9 @@ SHELL
       config.vm.provision 'install-lustre-client',
                           type: 'shell',
                           inline: <<-SHELL
-                            yum-config-manager --add-repo https://downloads.whamcloud.com/public/lustre/lustre-2.12.0/el7/client/
-                            yum-config-manager --save --setopt='*.gpgcheck=1' downloads.whamcloud.com_public_lustre_lustre-2.12.0_el7_client_
-                            yum-config-manager --save --setopt='*.gpgcheck=0' downloads.whamcloud.com_public_lustre_lustre-2.12.0_el7_client_
+                            yum-config-manager --add-repo https://build.whamcloud.com/jobs-pub/lustre-b2_12/configurations/axis-arch/x86_64/axis-build_type/client/axis-distro/el7.6/axis-ib_stack/inkernel/lastStable/archive/artifacts/
+                            yum-config-manager --save --setopt='*.gpgcheck=1' build.whamcloud.com_jobs-pub_lustre-b2_12_configurations_axis-arch_x86_64_axis-build_type_client_axis-distro_el7.6_axis-ib_stack_inkernel_lastStable_archive_artifacts_
+                            yum-config-manager --save --setopt='*.gpgcheck=0' build.whamcloud.com_jobs-pub_lustre-b2_12_configurations_axis-arch_x86_64_axis-build_type_client_axis-distro_el7.6_axis-ib_stack_inkernel_lastStable_archive_artifacts_
                             yum -y install lustre-client
                           SHELL
     end
@@ -479,7 +483,7 @@ end
 def install_lustre_zfs(config)
   config.vm.provision 'install-lustre-zfs', type: 'shell', run: 'never', inline: <<-SHELL
     yum clean all
-    yum install -y lustre-zfs
+    yum install -y --nogpgcheck lustre-zfs
     genhostid
   SHELL
 end
@@ -493,20 +497,31 @@ end
 
 def install_ldiskfs_no_iml(config)
   config.vm.provision 'install-ldiskfs-no-iml', type: 'shell', run: 'never', inline: <<-SHELL
-    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/lustre/latest-release/el7/server
+    yum-config-manager --add-repo=https://build.whamcloud.com/jobs-pub/lustre-b2_12/configurations/axis-arch/x86_64/axis-build_type/server/axis-distro/el7.6/axis-ib_stack/inkernel/lastStable/archive/artifacts/
     yum-config-manager --add-repo=https://downloads.whamcloud.com/public/e2fsprogs/latest/el7/
-    yum-config-manager --save --setopt='*.gpgcheck=1' downloads.whamcloud.com_public_e2fsprogs_latest_el7_
-    yum-config-manager --save --setopt='*.gpgcheck=0' downloads.whamcloud.com_public_e2fsprogs_latest_el7_
-    yum-config-manager --save --setopt='*.gpgcheck=1' downloads.whamcloud.com_public_lustre_latest-release_el7_server
-    yum-config-manager --save --setopt='*.gpgcheck=0' downloads.whamcloud.com_public_lustre_latest-release_el7_server
-    yum install -y lustre kmod-lustre-osd-ldiskfs ntp
+    yum install -y --nogpgcheck lustre kmod-lustre-osd-ldiskfs ntp
     systemctl enable --now ntpd
   SHELL
 end
 
-def get_oss_block_device(slice, idxOrEmpty)
+def install_zfs_no_iml(config)
+  config.vm.provision 'install-zfs-no-iml', type: 'shell', run: 'never', inline: <<-SHELL
+    yum-config-manager --add-repo=https://build.whamcloud.com/jobs-pub/lustre-b2_12/configurations/axis-arch/x86_64/axis-build_type/server/axis-distro/el7.6/axis-ib_stack/inkernel/lastStable/archive/artifacts
+    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/e2fsprogs/latest/el7/
+    yum install -y --nogpgcheck spl-dkms lustre-osd-zfs-mount lustre lustre-zfs-dkms zfs ntp
+    systemctl enable --now ntpd
+  SHELL
+end
+
+def get_oss_block_device(slice, idx)
   <<-SHELL
-    echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.blockDevices | to_entries | map(.value) |  map(select(.isMpath)) | map(.paths | .[2]) | .[#{slice}] | .[#{idxOrEmpty}]'
+    echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.blockDevices | to_entries | map(.value) |  map(select(.isMpath)) | map(.paths | .[2]) | .[#{slice}] | .[#{idx}]'
+  SHELL
+end
+
+def get_oss_block_devices(slice)
+  <<-SHELL
+    echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.blockDevices | to_entries | map(.value) |  map(select(.isMpath)) | map(.paths | .[2]) | sort | .[#{slice}] | .[]'
   SHELL
 end
 

@@ -155,7 +155,7 @@ __EOF
                        make rpms
                        yum install -y /integrated-manager-for-lustre/_topdir/RPMS/noarch/python2-iml-manager-*
                        chroma-config setup admin lustre localhost --no-dbspace-check
-                     SHELL        
+                     SHELL
   end
 
   #

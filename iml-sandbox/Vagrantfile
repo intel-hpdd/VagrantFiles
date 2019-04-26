@@ -393,9 +393,7 @@ SHELL
                           type: 'shell',
                           inline: <<-SHELL
                             yum-config-manager --add-repo https://build.whamcloud.com/jobs-pub/lustre-b2_12/configurations/axis-arch/x86_64/axis-build_type/client/axis-distro/el7.6/axis-ib_stack/inkernel/lastStable/archive/artifacts/
-                            yum-config-manager --save --setopt='*.gpgcheck=1' build.whamcloud.com_jobs-pub_lustre-b2_12_configurations_axis-arch_x86_64_axis-build_type_client_axis-distro_el7.6_axis-ib_stack_inkernel_lastStable_archive_artifacts_
-                            yum-config-manager --save --setopt='*.gpgcheck=0' build.whamcloud.com_jobs-pub_lustre-b2_12_configurations_axis-arch_x86_64_axis-build_type_client_axis-distro_el7.6_axis-ib_stack_inkernel_lastStable_archive_artifacts_
-                            yum -y install lustre-client
+                            yum -y --nogpgcheck install lustre-client
                           SHELL
     end
   end

@@ -392,8 +392,8 @@ SHELL
       config.vm.provision 'install-lustre-client',
                           type: 'shell',
                           inline: <<-SHELL
-                            yum-config-manager --add-repo https://build.whamcloud.com/jobs-pub/lustre-b2_12/configurations/axis-arch/x86_64/axis-build_type/client/axis-distro/el7.6/axis-ib_stack/inkernel/lastStable/archive/artifacts/
-                            yum -y --nogpgcheck install lustre-client
+                            yum-config-manager --add-repo https://downloads.whamcloud.com/public/lustre/lustre-2.12.1/el7/client/
+                            yum install -y lustre-client
                           SHELL
     end
   end
@@ -495,18 +495,18 @@ end
 
 def install_ldiskfs_no_iml(config)
   config.vm.provision 'install-ldiskfs-no-iml', type: 'shell', run: 'never', inline: <<-SHELL
-    yum-config-manager --add-repo=https://build.whamcloud.com/jobs-pub/lustre-b2_12/configurations/axis-arch/x86_64/axis-build_type/server/axis-distro/el7.6/axis-ib_stack/inkernel/lastStable/archive/artifacts/
+    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/lustre/lustre-2.12.1/el7/server/
     yum-config-manager --add-repo=https://downloads.whamcloud.com/public/e2fsprogs/latest/el7/
-    yum install -y --nogpgcheck lustre kmod-lustre-osd-ldiskfs ntp
+    yum install -y lustre kmod-lustre-osd-ldiskfs ntp
     systemctl enable --now ntpd
   SHELL
 end
 
 def install_zfs_no_iml(config)
   config.vm.provision 'install-zfs-no-iml', type: 'shell', run: 'never', inline: <<-SHELL
-    yum-config-manager --add-repo=https://build.whamcloud.com/jobs-pub/lustre-b2_12/configurations/axis-arch/x86_64/axis-build_type/server/axis-distro/el7.6/axis-ib_stack/inkernel/lastStable/archive/artifacts
+    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/lustre/lustre-2.12.1/el7/server/
     yum-config-manager --add-repo=https://downloads.whamcloud.com/public/e2fsprogs/latest/el7/
-    yum install -y --nogpgcheck spl-dkms lustre-osd-zfs-mount lustre lustre-zfs-dkms zfs ntp
+    yum install -y lustre-osd-zfs-mount lustre lustre-zfs-dkms zfs ntp
     systemctl enable --now ntpd
   SHELL
 end
@@ -574,26 +574,26 @@ def create_iscsi_disks(vbox, name)
 
     unless File.exist?(file_to_disk)
       vbox.customize ['createmedium',
-                     'disk',
-                     '--filename',
-                     file_to_disk,
-                     '--size',
-                     size,
-                     '--format',
-                     'VDI',
-                     '--variant',
-                     'fixed']
+                      'disk',
+                      '--filename',
+                      file_to_disk,
+                      '--size',
+                      size,
+                      '--format',
+                      'VDI',
+                      '--variant',
+                      'fixed']
     end
 
     vbox.customize ['storageattach', :id,
-                   '--storagectl', 'SATA Controller',
-                   '--port', port,
-                   '--type', 'hdd',
-                   '--medium', file_to_disk,
-                   '--device', '0']
+                    '--storagectl', 'SATA Controller',
+                    '--port', port,
+                    '--type', 'hdd',
+                    '--medium', file_to_disk,
+                    '--device', '0']
 
     vbox.customize ['setextradata', :id,
-                   "VBoxInternal/Devices/ahci/0/Config/Port#{port}/SerialNumber",
-                   name.ljust(20, '0')]
+                    "VBoxInternal/Devices/ahci/0/Config/Port#{port}/SerialNumber",
+                    name.ljust(20, '0')]
   end
 end

@@ -12,11 +12,6 @@ MGMT_NET_PFX = "#{SUBNET_PREFIX}.10".freeze
 # Lustre / HPC network
 LNET_PFX = "#{SUBNET_PREFIX}.20".freeze
 
-# Subnet index used to create cross-over nets for each HA cluster pair
-# This currently appears to be pointless as unmanaged networks don't
-# get an IP assigned.
-xnet_idx = 230
-
 ISCI_IP = "#{SUBNET_PREFIX}.40.10".freeze
 
 ISCI_IP2 = "#{SUBNET_PREFIX}.50.10".freeze
@@ -179,14 +174,11 @@ __EOF
       # Private network to simulate crossover.
       # Used exclusively as additional cluster network
       mds.vm.network 'private_network',
-                     ip: "#{SUBNET_PREFIX}.#{xnet_idx}.1#{i}",
+                     ip: "#{SUBNET_PREFIX}.230.1#{i}",
                      netmask: '255.255.255.0',
                      auto_config: false,
-                     virtualbox__intnet: "crossover-net#{xnet_idx}"
+                     virtualbox__intnet: "crossover-net-mds"
 
-      # Increment the "crossover" subnet number so that
-      # each HA pair has a unique "crossover" subnet
-      xnet_idx += 1 if i.even?
 
       provision_iscsi_client mds, 'mds', i
 
@@ -293,14 +285,11 @@ SHELL
       # Private network to simulate crossover.
       # Used exclusively as additional cluster network
       oss.vm.network 'private_network',
-                     ip: "#{SUBNET_PREFIX}.#{xnet_idx}.2#{i}",
+                     ip: "#{SUBNET_PREFIX}.231.2#{i}",
                      netmask: '255.255.255.0',
                      auto_config: false,
-                     virtualbox__intnet: "crossover-net#{xnet_idx}"
+                     virtualbox__intnet: "crossover-net-oss"
 
-      # Increment the "crossover" subnet number so that
-      # each HA pair has a unique "crossover" subnet
-      xnet_idx += 1 if i.even?
 
       slice = i == 1 ? '0:10' : '10:20'
 

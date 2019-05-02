@@ -184,6 +184,11 @@ __EOF
                      auto_config: false,
                      virtualbox__intnet: "crossover-net#{xnet_idx}"
 
+      mds.vm.provision 'fix-ip', type: 'shell', run: 'always',
+      inline: <<-SHELL
+        ifconfig eth5 #{SUBNET_PREFIX}.#{xnet_idx}.1#{i} netmask 255.255.255.0
+      SHELL
+      
       # Increment the "crossover" subnet number so that
       # each HA pair has a unique "crossover" subnet
       xnet_idx += 1 if i.even?
@@ -297,6 +302,11 @@ SHELL
                      netmask: '255.255.255.0',
                      auto_config: false,
                      virtualbox__intnet: "crossover-net#{xnet_idx}"
+
+      oss.vm.provision 'fix-ip', type: 'shell', run: 'always',
+      inline: <<-SHELL
+        ifconfig eth5 #{SUBNET_PREFIX}.#{xnet_idx}.2#{i} netmask 255.255.255.0
+      SHELL
 
       # Increment the "crossover" subnet number so that
       # each HA pair has a unique "crossover" subnet

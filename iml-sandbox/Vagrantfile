@@ -129,11 +129,21 @@ __EOF
     provision_fence_agents adm
 
     # Install IML onto the admin node
-    # Using the devel repo from Copr
-    adm.vm.provision 'install-iml-devel-copr',
+    # Using the mfl devel repo
+    adm.vm.provision 'install-iml-devel',
                      type: 'shell', run: 'never',
                      inline: <<-SHELL
                       yum-config-manager --add-repo=https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/master/chroma_support.repo
+                      yum install -y python2-iml-manager
+                      chroma-config setup admin lustre localhost --no-dbspace-check
+                     SHELL
+
+    # Install IML 5.0 onto the admin node
+    # Using the mfl 5.0 repo
+    adm.vm.provision 'install-iml-5',
+                     type: 'shell', run: 'never',
+                     inline: <<-SHELL
+                      yum-config-manager --add-repo=https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/v5.0.0/chroma_support.repo
                       yum install -y python2-iml-manager
                       chroma-config setup admin lustre localhost --no-dbspace-check
                      SHELL
@@ -177,7 +187,7 @@ __EOF
                      ip: "#{SUBNET_PREFIX}.230.1#{i}",
                      netmask: '255.255.255.0',
                      auto_config: false,
-                     virtualbox__intnet: "crossover-net-mds"
+                     virtualbox__intnet: 'crossover-net-mds'
 
 
       provision_iscsi_client mds, 'mds', i
@@ -288,7 +298,7 @@ SHELL
                      ip: "#{SUBNET_PREFIX}.231.2#{i}",
                      netmask: '255.255.255.0',
                      auto_config: false,
-                     virtualbox__intnet: "crossover-net-oss"
+                     virtualbox__intnet: 'crossover-net-oss'
 
 
       slice = i == 1 ? '0:10' : '10:20'

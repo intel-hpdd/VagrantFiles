@@ -439,6 +439,7 @@ def provision_fence_agents(config)
     yum install -y yum-plugin-copr
     yum -y copr enable managerforlustre/manager-for-lustre-devel
     yum install -y fence-agents-vbox
+    yum -y copr disable managerforlustre/manager-for-lustre-devel
   SHELL
 end
 

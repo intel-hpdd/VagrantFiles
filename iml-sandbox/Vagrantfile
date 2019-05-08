@@ -328,6 +328,7 @@ SHELL
                           env: { 'device_query' => get_oss_block_devices(slice) },
                           inline: <<-SHELL
                             block_device=$(eval $device_query)
+                            genhostid
                             zpool create oss#{i} -o multihost=on raidz2 $block_device
                           SHELL
 

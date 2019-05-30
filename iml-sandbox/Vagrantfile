@@ -154,7 +154,7 @@ __EOF
     adm.vm.provision 'install-iml-local',
                      type: 'shell', run: 'never',
                      inline: <<-SHELL
-                       yum-config-manager --add-repo=https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/master/chroma_support.repo
+                       yum copr enable -y managerforlustre/manager-for-lustre-devel
                        yum install -y rpmdevtools git ed epel-release python-setuptools
                        cd /integrated-manager-for-lustre
                        make rpms
@@ -188,7 +188,6 @@ __EOF
                      netmask: '255.255.255.0',
                      auto_config: false,
                      virtualbox__intnet: 'crossover-net-mds'
-
 
       provision_iscsi_client mds, 'mds', i
 
@@ -302,7 +301,6 @@ SHELL
                      netmask: '255.255.255.0',
                      auto_config: false,
                      virtualbox__intnet: 'crossover-net-oss'
-
 
       slice = i == 1 ? '0:10' : '10:20'
 

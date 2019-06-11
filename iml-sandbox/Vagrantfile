@@ -42,7 +42,7 @@ Vagrant.configure('2') do |config|
 #{MGMT_NET_PFX}.24 oss4.local oss4
     __EOF
     (1..8).each do |cidx|
-      f.puts "#{MGMT_NET_PFX}.3#{cidx} c#{cidx}.lfs.local c#{cidx}\n"
+      f.puts "#{MGMT_NET_PFX}.3#{cidx} c#{cidx}.local c#{cidx}\n"
     end
   end
   config.vm.provision 'shell', inline: 'cp -f /vagrant/hosts /etc/hosts'

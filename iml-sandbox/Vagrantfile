@@ -212,7 +212,7 @@ __EOF
       
       pool_name = (i == 1 ? 'mg' : 'md')
 
-      config.vm.provision 'create-pools',
+      mds.vm.provision 'create-pools',
                           type: 'shell',
                           run: 'never',
                           inline: <<-SHELL
@@ -220,7 +220,7 @@ __EOF
                             zpool create #{pool_name}s -o multihost=on /dev/#{pool_name}t
                           SHELL
 
-      config.vm.provision 'add_udev_rule',
+      mds.vm.provision 'add_udev_rule',
                           type: 'shell',
                           inline:
 <<-SHELL
@@ -233,7 +233,7 @@ EOF
 SHELL
 
       if i == 1
-        config.vm.provision 'create-zfs-fs',
+        mds.vm.provision 'create-zfs-fs',
                             type: 'shell',
                             run: 'never',
                             inline: <<-SHELL
@@ -242,7 +242,7 @@ SHELL
                               mount -t lustre mgs/mgt /lustre/zfsmo/mgs
                             SHELL
 
-        config.vm.provision 'create-ldiskfs-fs',
+        mds.vm.provision 'create-ldiskfs-fs',
                             type: 'shell',
                             run: 'never',
                             inline: <<-SHELL
@@ -252,7 +252,7 @@ SHELL
                             SHELL
 
       else
-        config.vm.provision 'create-zfs-fs',
+        mds.vm.provision 'create-zfs-fs',
                             type: 'shell',
                             run: 'never',
                             inline: <<-SHELL
@@ -261,7 +261,7 @@ SHELL
                               mount -t lustre mds/mdt0 /lustre/zfsmo/mdt0
                             SHELL
 
-        config.vm.provision 'create-ldiskfs-fs',
+        mds.vm.provision 'create-ldiskfs-fs',
                             type: 'shell',
                             run: 'never',
                             inline: <<-SHELL
@@ -325,7 +325,7 @@ SHELL
 
       configure_docker_network oss
 
-      config.vm.provision 'create-pools',
+      oss.vm.provision 'create-pools',
                           type: 'shell',
                           run: 'never',
                           env: { 'device_query' => get_oss_block_devices(slice) },
@@ -336,7 +336,7 @@ SHELL
                           SHELL
 
       if i == 1
-        config.vm.provision 'create-zfs-fs',
+        oss.vm.provision 'create-zfs-fs',
                             type: 'shell',
                             run: 'never',
                             inline: <<-SHELL
@@ -345,7 +345,7 @@ SHELL
                               mount -t lustre oss1/ost00 /lustre/zfsmo/ost00
                             SHELL
 
-        config.vm.provision 'create-ldiskfs-fs',
+        oss.vm.provision 'create-ldiskfs-fs',
                             type: 'shell',
                             run: 'never',
                             env: { 'device_query' => get_oss_block_device(slice, 0) },
@@ -356,7 +356,7 @@ SHELL
                               mount -t lustre $block_device /mnt/ost#{i}
                             SHELL
       else
-        config.vm.provision 'create-zfs-fs',
+        oss.vm.provision 'create-zfs-fs',
                             type: 'shell',
                             run: 'never',
                             inline: <<-SHELL
@@ -364,7 +364,7 @@ SHELL
                               mkdir -p /lustre/zfsmo/ost01
                               mount -t lustre oss2/ost01 /lustre/zfsmo/ost01
                             SHELL
-        config.vm.provision 'create-ldiskfs-fs',
+        oss.vm.provision 'create-ldiskfs-fs',
                             type: 'shell',
                             run: 'never',
                             env: { 'device_query' => get_oss_block_device(slice, 1) },
@@ -393,10 +393,10 @@ SHELL
       # Lustre / application network
       provision_lnet_net c, "3#{i}"
 
-      config.vm.provision 'install-lustre-client',
+      c.vm.provision 'install-lustre-client',
                           type: 'shell',
                           inline: <<-SHELL
-                            yum-config-manager --add-repo https://downloads.whamcloud.com/public/lustre/lustre-2.12.1/el7/client/
+                            yum-config-manager --add-repo https://downloads.whamcloud.com/public/lustre/lustre-2.12.2/el7/client/
                             yum install -y --nogpgcheck lustre-client
                           SHELL
     end
@@ -500,7 +500,7 @@ end
 
 def install_ldiskfs_no_iml(config)
   config.vm.provision 'install-ldiskfs-no-iml', type: 'shell', run: 'never', inline: <<-SHELL
-    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/lustre/lustre-2.12.1/el7/server/
+    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/lustre/lustre-2.12.2/el7/server/
     yum-config-manager --add-repo=https://downloads.whamcloud.com/public/e2fsprogs/latest/el7/
     yum install -y --nogpgcheck lustre kmod-lustre-osd-ldiskfs ntp
     systemctl enable --now ntpd
@@ -509,7 +509,7 @@ end
 
 def install_zfs_no_iml(config)
   config.vm.provision 'install-zfs-no-iml', type: 'shell', run: 'never', inline: <<-SHELL
-    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/lustre/lustre-2.12.1/el7/patchless-ldiskfs-server/
+    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/lustre/lustre-2.12.2/el7/patchless-ldiskfs-server/
     yum-config-manager --add-repo=https://downloads.whamcloud.com/public/e2fsprogs/latest/el7/
     yum-config-manager --add-repo=http://download.zfsonlinux.org/epel/7.6/kmod/x86_64/
     yum install -y --nogpgcheck lustre zfs kmod-lustre-osd-ldiskfs kmod-lustre-osd-zfs ntp

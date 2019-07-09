@@ -192,6 +192,8 @@ __EOF
 
       provision_iscsi_client mds, 'mds', i
 
+      provision_zfs_params mds
+
       provision_mpath mds
 
       provision_fence_agents mds
@@ -306,6 +308,8 @@ SHELL
       slice = i == 1 ? '0:10' : '10:20'
 
       provision_iscsi_client oss, 'oss', i
+
+      provision_zfs_params oss
 
       provision_mpath oss
 
@@ -447,6 +451,19 @@ def provision_fence_agents(config)
     yum -y copr disable managerforlustre/manager-for-lustre-devel
   SHELL
 end
+
+def provision_zfs_params(config)
+  config.vm.provision 'zfs-params', type: 'shell', inline: <<-SHELL
+    echo 100 > /sys/module/zfs/parameters/zfs_multihost_history
+    echo 20 > /sys/module/zfs/parameters/zfs_multihost_fail_intervals
+    echo 60 > /sys/module/zfs/parameters/zfs_multihost_fail_intervals
+    echo options zfs zfs_multihost_history=100 > /etc/modprobe.d/iml_zfs_module_parameters.conf
+    echo options zfs zfs_multihost_history=100 > /etc/modprobe.d/iml_zfs_module_parameters.conf
+    echo options zfs zfs_multihost_fail_intervals=20 >> /etc/modprobe.d/iml_zfs_module_parameters.conf
+    echo options zfs zfs_multihost_fail_intervals=60 >> /etc/modprobe.d/iml_zfs_module_parameters.conf
+  SHELL
+end
+
 
 def cleanup_storage_server(config)
   config.vm.provision 'cleanup', type: 'shell', run: 'never', inline: <<-SHELL

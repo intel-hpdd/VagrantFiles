@@ -82,7 +82,7 @@ __EOF
       create_iscsi_disks(vbx, name)
     end
 
-    ost_commands = ('d'..'z')
+    ost_commands = ('f'..'z')
                    .take(20)
                    .flat_map.with_index do |x, i|
       [
@@ -96,11 +96,15 @@ __EOF
       yum -y install targetcli lsscsi
       targetcli /backstores/block create mgt1 /dev/sdb
       targetcli /backstores/block create mdt1 /dev/sdc
+      targetcli /backstores/block create mdt2 /dev/sdd
+      targetcli /backstores/block create mdt3 /dev/sde
       targetcli /iscsi set global auto_add_default_portal=false
       targetcli /iscsi create iqn.2015-01.com.whamcloud.lu:mds
       targetcli /iscsi create iqn.2015-01.com.whamcloud.lu:oss
       targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/luns/ create /backstores/block/mgt1
       targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/luns/ create /backstores/block/mdt1
+      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/luns/ create /backstores/block/mdt2
+      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/luns/ create /backstores/block/mdt3
       #{ost_commands}
       targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/portals/ create #{ISCI_IP}
       targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:oss/tpg1/portals/ create #{ISCI_IP}
@@ -222,18 +226,6 @@ __EOF
                             zpool create #{pool_name}s -o multihost=on /dev/#{pool_name}t
                           SHELL
 
-      mds.vm.provision 'add_udev_rule',
-                          type: 'shell',
-                          inline:
-<<-SHELL
-  cat > /etc/udev/rules.d/99-lustre-volume.rules <<EOF
-  SUBSYSTEM=="block", ENV{ID_MODEL}=="mgt1", SYMLINK+="mgt"
-  SUBSYSTEM=="block", ENV{ID_MODEL}=="mdt1", SYMLINK+="mdt"
-EOF
-
-  udevadm trigger --action=change --subsystem-match=block
-SHELL
-
       if i == 1
         mds.vm.provision 'create-zfs-fs',
                             type: 'shell',
@@ -249,8 +241,12 @@ SHELL
                             run: 'never',
                             inline: <<-SHELL
                               mkdir -p /mnt/mgs
-                              mkfs.lustre --mgs --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp /dev/mgt
-                              mount -t lustre /dev/mgt /mnt/mgs
+                              mkfs.lustre --mgs --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp /dev/mapper/mpatha
+                              mount -t lustre /dev/mapper/mpatha /mnt/mgs
+
+                              mkdir -p /mnt/mdt0
+                              mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathb
+                              mount -t lustre /dev/mapper/mpathb /mnt/mdt0
                             SHELL
 
       else
@@ -267,9 +263,13 @@ SHELL
                             type: 'shell',
                             run: 'never',
                             inline: <<-SHELL
-                              mkdir -p /mnt/mdt
-                              mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mdt
-                              mount -t lustre /dev/mdt /mnt/mdt
+                              mkdir -p /mnt/mdt{1,2}
+
+                              mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=1 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathc
+                              mount -t lustre /dev/mapper/mpathc /mnt/mdt1
+
+                              mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=2 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathd
+                              mount -t lustre /dev/mapper/mpathd /mnt/mdt2
                             SHELL
       end
     end
@@ -588,7 +588,9 @@ def create_iscsi_disks(vbox, name)
 
   [
     %w[mgt 512],
-    %w[mdt0 5120]
+    %w[mdt1 5120],
+    %w[mdt2 5120],
+    %w[mdt3 5120],
   ].concat(osts).each_with_index do |(name, size), i|
     file_to_disk = "#{dir}/#{name}.vdi"
     port = (i + 1).to_s

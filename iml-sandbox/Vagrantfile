@@ -227,8 +227,8 @@ __EOF
                           inline:
 <<-SHELL
   cat > /etc/udev/rules.d/99-lustre-volume.rules <<EOF
-  SUBSYSTEM=="block", ATTR{size}=="1048576", SYMLINK+="mgt"
-  SUBSYSTEM=="block", ATTR{size}=="10485760", SYMLINK+="mdt"
+  SUBSYSTEM=="block", ENV{ID_MODEL}=="mgt1", SYMLINK+="mgt"
+  SUBSYSTEM=="block", ENV{ID_MODEL}=="mdt1", SYMLINK+="mdt"
 EOF
 
   udevadm trigger --action=change --subsystem-match=block
@@ -454,6 +454,7 @@ end
 
 def provision_zfs_params(config)
   config.vm.provision 'zfs-params', type: 'shell', inline: <<-SHELL
+    mkdir -p /sys/module/zfs/parameters
     echo 100 > /sys/module/zfs/parameters/zfs_multihost_history
     echo 60 > /sys/module/zfs/parameters/zfs_multihost_fail_intervals
     echo options zfs zfs_multihost_history=100 > /etc/modprobe.d/iml_zfs_module_parameters.conf
@@ -514,7 +515,7 @@ end
 
 def install_ldiskfs_no_iml(config)
   config.vm.provision 'install-ldiskfs-no-iml', type: 'shell', run: 'never', inline: <<-SHELL
-    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/lustre/lustre-2.12.2/el7/server/
+    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/lustre/lustre-2.12.2/el7/patchless-ldiskfs-server/
     yum-config-manager --add-repo=https://downloads.whamcloud.com/public/e2fsprogs/latest/el7/
     yum install -y --nogpgcheck lustre kmod-lustre-osd-ldiskfs ntp
     systemctl enable --now ntpd
@@ -620,9 +621,9 @@ end
 
 def configure_docker_network(config)
   config.trigger.before :provision, name: "configure-docker-network-trigger" do |t|
-    t.ruby do |env, machine|
+    t.ruby do |_, _|
       if ARGV[3] == 'configure-docker-network'
-        puts "Copying identify file to job scheduler container."
+        puts 'Copying identify file to job scheduler container.'
         puts `docker ps --format '{{.Names}}' | grep job-scheduler | xargs -I {} docker exec {} sh -c 'mkdir -p /root/.ssh'`
         puts `docker ps --format '{{.Names}}' | grep job-scheduler | xargs -I {} docker cp id_rsa {}:/root/.ssh`
       end

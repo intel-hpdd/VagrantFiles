@@ -137,7 +137,8 @@ __EOF
     adm.vm.provision 'install-iml-devel',
                      type: 'shell', run: 'never',
                      inline: <<-SHELL
-                      yum-config-manager --add-repo=https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/master/chroma_support.repo
+                      curl -k -o /etc/yum.repos.d/chroma_support.repo https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/master/tests/framework/chroma_support.repo.in
+                      yum copr enable -y managerforlustre/manager-for-lustre-devel
                       yum install -y python2-iml-manager
                       chroma-config setup admin lustre localhost --no-dbspace-check
                      SHELL

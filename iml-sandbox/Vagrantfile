@@ -138,7 +138,7 @@ __EOF
                      type: 'shell', run: 'never',
                      inline: <<-SHELL
                       curl -k -o /etc/yum.repos.d/chroma_support.repo https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/master/tests/framework/chroma_support.repo.in
-                      sed -i ':a;N;$!ba;s/enabled=1/enabled=0/1' /etc/yum.repos.d/chroma_support.repo
+                      sed -i '/[@MFL_COPR_NAME@]/,10d' /etc/yum.repos.d/chroma_support.repo
                       yum copr enable -y managerforlustre/manager-for-lustre-devel
                       yum install -y python2-iml-manager
                       chroma-config setup admin lustre localhost --no-dbspace-check

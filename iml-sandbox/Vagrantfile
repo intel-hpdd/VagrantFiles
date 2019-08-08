@@ -146,6 +146,7 @@ __EOF
                       echo "gpgcheck=0" >> /etc/yum.repos.d/repos.influxdata*.repo 
                       # Grafana
                       yum-config-manager --add-repo https://packages.grafana.com/oss/rpm
+                      echo "gpgcheck=0" >> /etc/yum.repos.d/packages.grafana*.repo
                       yum install -y python2-iml-manager
                       chroma-config setup admin lustre localhost --no-dbspace-check
                      SHELL

@@ -137,9 +137,15 @@ __EOF
     adm.vm.provision 'install-iml-devel',
                      type: 'shell', run: 'never',
                      inline: <<-SHELL
-                      curl -k -o /etc/yum.repos.d/chroma_support.repo https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/master/tests/framework/chroma_support.repo.in
-                      sed -i '/[@MFL_COPR_NAME@]/,10d' /etc/yum.repos.d/chroma_support.repo
+                      yum install -y epel-release 
                       yum copr enable -y managerforlustre/manager-for-lustre-devel
+                      # Extras
+                      yum-config-manager --add-repo http://mirror.centos.org/centos/7/extras/x86_64/
+                      # InfluxDB
+                      yum-config-manager --add-repo https://repos.influxdata.com/centos/7/x86_64/stable/
+                      echo "gpgcheck=0" >> /etc/yum.repos.d/repos.influxdata*.repo 
+                      # Grafana
+                      yum-config-manager --add-repo https://packages.grafana.com/oss/rpm
                       yum install -y python2-iml-manager
                       chroma-config setup admin lustre localhost --no-dbspace-check
                      SHELL

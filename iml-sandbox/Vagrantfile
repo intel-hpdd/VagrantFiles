@@ -534,13 +534,13 @@ end
 
 def get_oss_block_device(slice, idx)
   <<-SHELL
-    echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.blockDevices | to_entries | map(.value) |  map(select(.isMpath)) | map(.paths | .[2]) | .[#{slice}] | .[#{idx}]'
+    echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.Root .children | map(select(.ScsiDevice | .filesystem_type == "mpath_member")) | map(.ScsiDevice | .children) | flatten | map(.Mpath) | map(.paths | .[2]) | unique | .[#{slice}] | .[#{idx}]'
   SHELL
 end
 
 def get_oss_block_devices(slice)
   <<-SHELL
-    echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.blockDevices | to_entries | map(.value) |  map(select(.isMpath)) | map(.paths | .[2]) | sort | .[#{slice}] | .[]'
+    echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.Root .children | map(select(.ScsiDevice | .filesystem_type == "mpath_member")) | map(.ScsiDevice | .children) | flatten | map(.Mpath) | map(.paths | .[2]) | unique | sort | .[#{slice}] | .[]'
   SHELL
 end
 

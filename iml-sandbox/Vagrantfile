@@ -137,7 +137,7 @@ __EOF
     adm.vm.provision 'install-iml-devel',
                      type: 'shell', run: 'never',
                      inline: <<-SHELL
-                      yum-config-manager --add-repo=https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/master/chroma_support.repo
+                     yum-config-manager --add-repo=https://github.com/whamcloud/integrated-manager-for-lustre/releases/download/5.next/chroma_support.repo
                       yum install -y python2-iml-manager
                       chroma-config setup admin lustre localhost --no-dbspace-check
                      SHELL
@@ -156,16 +156,16 @@ __EOF
     # This requires you have the IML source tree available at
     # /integrated-manager-for-lustre
     adm.vm.provision 'install-iml-local',
-                     type: 'shell', run: 'never',
-                     inline: <<-SHELL
-                       yum copr enable -y managerforlustre/manager-for-lustre-devel
-                       yum install -y rpmdevtools git ed epel-release python-setuptools
-                       cd /integrated-manager-for-lustre
-                       make rpms
-                       cp ./chroma_support.repo /etc/yum.repos.d/
-                       yum install -y /integrated-manager-for-lustre/_topdir/RPMS/noarch/python2-iml-manager-*
-                       chroma-config setup admin lustre localhost --no-dbspace-check
-                     SHELL
+      type: 'shell', run: 'never',
+      inline: <<-SHELL
+        yum copr enable -y managerforlustre/manager-for-lustre-devel
+        yum install -y rpmdevtools git ed epel-release python-setuptools
+        cd /integrated-manager-for-lustre
+        make rpms
+        cp ./chroma_support.repo /etc/yum.repos.d/
+        yum install -y /integrated-manager-for-lustre/_topdir/RPMS/noarch/python2-iml-manager-*
+        chroma-config setup admin lustre localhost --no-dbspace-check
+      SHELL
   end
 
   #
@@ -263,12 +263,19 @@ __EOF
                             type: 'shell',
                             run: 'never',
                             inline: <<-SHELL
-                              mkdir -p /mnt/mdt{1,2}
+                              mkdir -p /mnt/mdt1
 
                               mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=1 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathc
                               mount -t lustre /dev/mapper/mpathc /mnt/mdt1
+                            SHELL
 
-                              mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=2 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathd
+        mds.vm.provision 'create-ldiskfs-fs2',
+                            type: 'shell',
+                            run: 'never',
+                            inline: <<-SHELL
+                              mkdir -p /mnt/mdt2
+
+                              mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathd
                               mount -t lustre /dev/mapper/mpathd /mnt/mdt2
                             SHELL
       end
@@ -354,10 +361,23 @@ __EOF
                             run: 'never',
                             env: { 'device_query' => get_oss_block_device(slice, 0) },
                             inline: <<-SHELL
-                              mkdir -p /mnt/ost#{i}
+                              mkdir -p /mnt/ost1
                               block_device=$(eval $device_query)
                               mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs $block_device
-                              mount -t lustre $block_device /mnt/ost#{i}
+                              echo mounting $block_device on /mnt/ost1
+                              mount -t lustre $block_device /mnt/ost1
+                            SHELL
+
+        oss.vm.provision 'create-ldiskfs-fs2',
+                            type: 'shell',
+                            run: 'never',
+                            env: { 'device_query' => get_oss_block_device(slice, 1) },
+                            inline: <<-SHELL
+                              mkdir -p /mnt/ost3
+                              block_device=$(eval $device_query)
+                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs2 $block_device
+                              echo mounting $block_device on /mnt/ost3
+                              mount -t lustre $block_device /mnt/ost3
                             SHELL
       else
         oss.vm.provision 'create-zfs-fs',
@@ -371,12 +391,25 @@ __EOF
         oss.vm.provision 'create-ldiskfs-fs',
                             type: 'shell',
                             run: 'never',
-                            env: { 'device_query' => get_oss_block_device(slice, 1) },
+                            env: { 'device_query' => get_oss_block_device(slice, 0) },
                             inline: <<-SHELL
-                              mkdir -p /mnt/ost#{i}
+                              mkdir -p /mnt/ost2
                               block_device=$(eval $device_query)
                               mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=1 --mgsnode=10.73.20.11@tcp --fsname=fs $block_device
-                              mount -t lustre $block_device /mnt/ost#{i}
+                              echo mounting $block_device on /mnt/ost2
+                              mount -t lustre $block_device /mnt/ost2
+                            SHELL
+
+        oss.vm.provision 'create-ldiskfs-fs2',
+                            type: 'shell',
+                            run: 'never',
+                            env: { 'device_query' => get_oss_block_device(slice, 1) },
+                            inline: <<-SHELL
+                              mkdir -p /mnt/ost4
+                              block_device=$(eval $device_query)
+                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=1 --mgsnode=10.73.20.11@tcp --fsname=fs2 $block_device
+                              echo mounting $block_device on /mnt/ost4
+                              mount -t lustre $block_device /mnt/ost4
                             SHELL
 
       end

@@ -1,11 +1,12 @@
 # Create a Virtual HPC Storage Cluster with Vagrant
 
 ## Introduction
+
 Vagrant is a powerful platform for programmatically creating and managing virtual machines. It is easy to install and is capable of supporting multiple virtual machine platforms, including VirtualBox, HyperV and VMWare. Additional VM providers can be added by way of plugins. Vagrant is also largely platform-neutral: it can run on Windows, Mac and Linux.
 
 More information about Vagrant is available here:
 
-https://www.vagrantup.com/
+<https://www.vagrantup.com/>
 
 This article describes how to use Vagrant to very quickly establish a virtual HPC cluster on a single host suitable for use as a testbed for Lustre or as a training environment. This is intended as a platform for learning about how Lustre works, evaluating features, compiling packages, developing software, testing processes and patches.
 
@@ -13,7 +14,7 @@ This article describes how to use Vagrant to very quickly establish a virtual HP
 
 The Vagrant project has comprehensive documentation covering installation requirements, available here:
 
-https://www.vagrantup.com/docs/
+<https://www.vagrantup.com/docs/>
 
 The platform used in this document is based on Fedora 25 and Oracle's VirtualBox. The target machine needs enough storage capacity to accommodate the virtual machines that will be deployed, which may be several gigabytes each, as well as RAM to allow for multiple VMs to run concurrently.
 
@@ -25,7 +26,7 @@ Memory is probably the single most important resource to optimise. Systems with 
 
 Vagrant is available for download from the project's site:
 
-https://www.vagrantup.com/downloads.html
+<https://www.vagrantup.com/downloads.html>
 
 The CentOS download on the page will also work for Red Hat Enterprise Linux and Fedora OS distributions.
 
@@ -33,7 +34,7 @@ The CentOS download on the page will also work for Red Hat Enterprise Linux and 
 
 Install the package. For example, for Fedora, RHEL 7, or CentOS 7:
 
-```
+```sh
 dnf install \
 https://releases.hashicorp.com/vagrant/1.9.5/vagrant_1.9.5_x86_64.rpm
 ```
@@ -46,15 +47,15 @@ Once installed, Vagrant does not require super-user privileges to run.
 
 VirtualBox is a virtualization platform available as a free download for multiple operating systems here:
 
-https://www.virtualbox.org/
+<https://www.virtualbox.org/>
 
 Instructions for installing VirtualBox are available here:
 
-https://www.virtualbox.org/wiki/Linux_Downloads
+<https://www.virtualbox.org/wiki/Linux_Downloads>
 
 For Fedora users, run the following commands to create a definition for the VirtualBox repository and install the software:
 
-```
+```sh
 sudo dnf config-manager --add-repo \
   http://download.virtualbox.org/virtualbox/rpm/fedora/virtualbox.repo
 sudo dnf --disablerepo=rpmfusion*  install VirtualBox-5.1
@@ -68,20 +69,20 @@ sudo dnf --disablerepo=rpmfusion*  install VirtualBox-5.1
 
 Create a directory within which to store the configuration for a Vagrant project:
 
-```
+```sh
 mkdir -p $HOME/vagrant-projects/ct73-base
 ```
 
 Vagrant uses templates to drive automated delivery of virtual machines. To generate a basic template, use `vagrant init`. For example, to initialise a project based on the `manager-for-lustre/centos73-1611-base` box:
 
-```
+```sh
 cd $HOME/vagrant-projects/ct73-base
 vagrant init manager-for-lustre/centos73-1611-base
 ```
 
 This will create a Vagrantfile template in the directory, populated with default values for the VM. Most of the file is comprised of comments. When the comments are removed, the template looks like this:
 
-```
+```sh
 Vagrant.configure("2") do |config|
   config.vm.box = "manager-for-lustre/centos73-1611-base"
 end
@@ -91,11 +92,11 @@ Vagrantfiles are written in Ruby, and are able to take advantage of Ruby's langu
 
 **Note:** For more information on the Vagrantfile syntax, including the object versions, refer to the Vagrant documentation:
 
-https://www.vagrantup.com/docs/vagrantfile/version.html
+<https://www.vagrantup.com/docs/vagrantfile/version.html>
 
 Now, run the following command to instantiate the VM:
 
-```
+```sh
 vagrant up
 ```
 
@@ -105,7 +106,7 @@ This step can take some time, as the base VM box has to be downloaded from the A
 
 The following exmaple is a complete transcript of the process:
 
-```
+```sh
 [malcolm@mini ct73-base]$ vagrant init manager-for-lustre/centos73-1611-base
 A `Vagrantfile` has been placed in this directory. You are now
 ready to `vagrant up` your first virtual environment! Please read
@@ -160,7 +161,7 @@ The messages in the output are informational and do not represent an error in th
 
 When the command completes, login to the VM:
 
-```
+```sh
 vagrant ssh
 ```
 
@@ -170,7 +171,7 @@ The VM is up and running, and has a basic OS configured. The VM guest has a sing
 
 Close the SSH connection to exit from the VM. When you are finished with the VM, it can be deleted as follows:
 
-```
+```sh
 vagrant destroy
 ```
 
@@ -178,13 +179,13 @@ vagrant destroy
 
 To get a complete list of available commands:
 
-```
+```sh
 vagrant list-commands
 ```
 
 For example:
 
-```
+```sh
 [malcolm@mini demo]$ vagrant list-commands
 Below is a listing of all available Vagrant commands and a brief
 description of what they do.
@@ -227,19 +228,19 @@ version         prints current and latest Vagrant version
 
 To start a VM:
 
-```
+```sh
 vagrant up [<vm name>]
 ```
 
 To connect to a VM:
 
-```
+```sh
 vagrant ssh [<vm name>]
 ```
 
 To reboot a VM:
 
-```
+```sh
 vagrant reload [<vm name>]
 ```
 
@@ -247,52 +248,51 @@ vagrant reload [<vm name>]
 
 To get the current status of all VMs in a project:
 
-```
+```sh
 vagrant status
 ```
 
 To suspend the VM:
 
-```
+```sh
 vagrant suspend
 ```
 
 To restore a suspended VM:
 
-```
+```sh
 vagrant resume
 ```
 
 To review the SSH configuration that was used to establish a connection, run this command from the project directory:
 
-```
+```sh
 vagrant ssh-config [<vm name>]
 ```
 
 To tear down and delete the VM:
 
-```
+```sh
 vagrant destroy [-f]
 ```
 
 To get a list of forwarded ports on each host, run:
 
-```
+```sh
 vagrant port <vm name>
 ```
 
 Refer to the Vagrant documentation for more information:
 
-https://www.vagrantup.com/docs
-
+<https://www.vagrantup.com/docs>
 
 ## Using the Lustre Vagrant Templates
 
-### Clone the repository:
+### Clone the repository
 
-```
+```sh
 cd $HOME
-git clone git@github.com:intel-hpdd/Vagrantfiles.git
+git clone git@github.com:whamcloud/Vagrantfiles.git
 ```
 
 Each subdirectory contains templates for automating the creation of virtual machines.
@@ -301,30 +301,30 @@ Each subdirectory contains templates for automating the creation of virtual mach
 
 Create a new project directory:
 
-```
+```sh
 mkdir -p $HOME/vagrant-projects/vhpc
 ```
 
 Copy the `hpc-storage-sandbox-el7/Vagrantfile` into the project directory:
 
-```
+```sh
 cp $HOME/Vagrantfiles/hpc-storage-sandbox-el7/Vagrantfile \
 $HOME/vagrant-projects/vhpc
 ```
 
 This Vagrantfile contains the information needed to create a virtual HPC storage cluster comprising:
 
-* 1 Admin server
-    * Used to host administration and monitoring software
-    * The admin server also has a passphraseless SSH key for access to the other nodes in the virtual cluster.
-* 2 metadata servers with 2 shared storage volumes, one for the MGS, one for the MDT
-    * MGT is 512MB
-    * MDT is 5GB
-* 2 or 4 object storage servers with 8 shared storage volumes per pair for OSTs
-    * 2 OSS created by default
-    * Each volume is 5GB. The relatively large number of volumes is useful for creating ZFS pools
-* Up to 8 compute nodes / Lustre clients
-    * 2 nodes created by default
+- 1 Admin server
+  - Used to host administration and monitoring software
+  - The admin server also has a passphraseless SSH key for access to the other nodes in the virtual cluster.
+- 2 metadata servers with 2 shared storage volumes, one for the MGS, one for the MDT
+  - MGT is 512MB
+  - MDT is 5GB
+- 2 or 4 object storage servers with 8 shared storage volumes per pair for OSTs
+  - 2 OSS created by default
+  - Each volume is 5GB. The relatively large number of volumes is useful for creating ZFS pools
+- Up to 8 compute nodes / Lustre clients
+  - 2 nodes created by default
 
 Each node has a NAT Ethernet device on `eth0` that is used for communication via the host.
 
@@ -336,38 +336,38 @@ In addition, each pair of server nodes (MDS, OSS) share a private interconnect i
 
 The networks are assigned to the node interfaces as follows:
 
-* `eth0`: NAT network to the hypervisor host
-    * Present on all nodes
-* `eth1`: Management network
-    * Present on all nodes
-* `eth2`: Application data network
-    * Present on MDS, OSS and compute nodes
-* `eth3`: "Cross-over" network (Corosync ring 1)
-    * Present on MDS and OSS nodes
+- `eth0`: NAT network to the hypervisor host
+  - Present on all nodes
+- `eth1`: Management network
+  - Present on all nodes
+- `eth2`: Application data network
+  - Present on MDS, OSS and compute nodes
+- `eth3`: "Cross-over" network (Corosync ring 1)
+  - Present on MDS and OSS nodes
 
 ### Starting and Stopping the Cluster
 
 To create the cluster, run:
 
-```
+```sh
 vagrant up
 ```
 
 To review the status of the VMs in the cluster, run:
 
-```
+```sh
 vagrant status
 ```
 
 To shutdown some or all of the VMs:
 
-```
+```sh
 vagrant halt [<vm name>]
 ```
 
 To stop the whole cluster and destroy the VMs:
 
-```
+```sh
 vagrant destroy [-f]
 ```
 
@@ -375,13 +375,13 @@ vagrant destroy [-f]
 
 To start individual node or set of nodes:
 
-```
+```sh
 vagrant up <vm name> [<vm name> ...]
 ```
 
 To stop individual nodes and destroy the instance:
 
-```
+```sh
 vagrant destroy [-f] <vm name> [<vm name> ...]
 ```
 
@@ -389,25 +389,25 @@ vagrant destroy [-f] <vm name> [<vm name> ...]
 
 The admin node is the default cluster node. Connect to it via ssh as follows:
 
-```
+```sh
 vagrant ssh
 ```
 
 In addition, port 8443 on the hypervisor host is mapped via port forwarding to port 443 on the admin VM guest, so that web services running on the admin server can be accessed from outside the VM. Use the hypervisor host network name or IP address and connect to port 8443, and this will redirect a browser or other TCP client to port 443 on the admin VM. The port can be changed by editing the `Vagrantfile` and searching for the following line in the Admin server definition:
 
-```
+```sh
 adm.vm.network "forwarded_port", guest: 443, host: 8443
 ```
 
 To get a list of forwarded ports, run:
 
-```
+```sh
 vagrant port <vm name>
 ```
 
 For example:
 
-```
+```sh
 [malcolm@mini vhpc]$ vagrant port adm
 The forwarded ports for the machine are listed below. Please note that
 these values may differ from values configured in the Vagrantfile if the
@@ -419,20 +419,20 @@ provider supports automatic port collision detection and resolution.
 
 One can also connect to other cluster nodes by specifying the vagrant node name, e.g.:
 
-```
+```sh
 vagrant ssh mds1
 ```
 
 The vagrant node names are:
 
-* adm
-* mds[1-2]
-* oss[1-4]
-* c[1-8]
+- adm
+- mds[1-2]
+- oss[1-4]
+- c[1-8]
 
 Run the `vagrant status` command to get a list of the VM definitions. For example:
 
-```
+```sh
 [malcolm@mini vhpc]$ vagrant status
 Current machine states:
 

@@ -237,17 +237,24 @@ __EOF
                             SHELL
 
         mds.vm.provision 'create-ldiskfs-fs',
-                            type: 'shell',
-                            run: 'never',
-                            inline: <<-SHELL
-                              mkdir -p /mnt/mgs
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
                               mkfs.lustre --mgs --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp /dev/mapper/mpatha
+                              mkdir -p /mnt/mgs
                               mount -t lustre /dev/mapper/mpatha /mnt/mgs
-
-                              mkdir -p /mnt/mdt0
                               mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathb
-                              mount -t lustre /dev/mapper/mpathb /mnt/mdt0
-                            SHELL
+                         SHELL
+
+        mds.vm.provision 'mount-ldiskfs-fs',
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                           mkdir -p /mnt/mgs
+                           mkdir -p /mnt/mdt0
+                           mount -t lustre /dev/mapper/mpatha /mnt/mgs
+                           mount -t lustre /dev/mapper/mpathb /mnt/mdt0
+                         SHELL
 
       else
         mds.vm.provision 'create-zfs-fs',
@@ -260,24 +267,28 @@ __EOF
                             SHELL
 
         mds.vm.provision 'create-ldiskfs-fs',
-                            type: 'shell',
-                            run: 'never',
-                            inline: <<-SHELL
-                              mkdir -p /mnt/mdt1
-
-                              mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=1 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathc
-                              mount -t lustre /dev/mapper/mpathc /mnt/mdt1
-                            SHELL
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                            mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=1 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathc
+                         SHELL
 
         mds.vm.provision 'create-ldiskfs-fs2',
                             type: 'shell',
                             run: 'never',
                             inline: <<-SHELL
                               mkdir -p /mnt/mdt2
-
                               mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathd
                               mount -t lustre /dev/mapper/mpathd /mnt/mdt2
                             SHELL
+
+        mds.vm.provision 'mount-ldiskfs-fs',
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                           mkdir -p /mnt/mdt1
+                           mount -t lustre /dev/mapper/mpathc /mnt/mdt1
+                         SHELL
       end
     end
   end
@@ -357,28 +368,51 @@ __EOF
                             SHELL
 
         oss.vm.provision 'create-ldiskfs-fs',
-                            type: 'shell',
-                            run: 'never',
-                            env: { 'device_query' => get_oss_block_device(slice, 0) },
-                            inline: <<-SHELL
-                              mkdir -p /mnt/ost1
-                              block_device=$(eval $device_query)
-                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs $block_device
-                              echo mounting $block_device on /mnt/ost1
-                              mount -t lustre $block_device /mnt/ost1
-                            SHELL
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpatha
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=1 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathb
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=2 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathc
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=3 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathd
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=4 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathe
+                         SHELL
+
+        oss.vm.provision 'mount-ldiskfs-fs',
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                          mkdir -p /mnt/ost{0,1,2,3,4}
+                          mount -t lustre /dev/mapper/mpatha /mnt/ost0
+                          mount -t lustre /dev/mapper/mpathb /mnt/ost1
+                          mount -t lustre /dev/mapper/mpathc /mnt/ost2
+                          mount -t lustre /dev/mapper/mpathd /mnt/ost3
+                          mount -t lustre /dev/mapper/mpathe /mnt/ost4
+                         SHELL
 
         oss.vm.provision 'create-ldiskfs-fs2',
-                            type: 'shell',
-                            run: 'never',
-                            env: { 'device_query' => get_oss_block_device(slice, 1) },
-                            inline: <<-SHELL
-                              mkdir -p /mnt/ost3
-                              block_device=$(eval $device_query)
-                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs2 $block_device
-                              echo mounting $block_device on /mnt/ost3
-                              mount -t lustre $block_device /mnt/ost3
-                            SHELL
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathf
+                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=1 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathg
+                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=2 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathh
+                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=3 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathi
+                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=4 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathj
+                         SHELL
+
+        oss.vm.provision 'mount-ldiskfs-fs2',
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                          mkdir -p /mnt/ost2-{0,1,2,3,4}
+                          mount -t lustre /dev/mapper/mpathf /mnt/ost2-0
+                          mount -t lustre /dev/mapper/mpathg /mnt/ost2-1
+                          mount -t lustre /dev/mapper/mpathh /mnt/ost2-2
+                          mount -t lustre /dev/mapper/mpathi /mnt/ost2-3
+                          mount -t lustre /dev/mapper/mpathj /mnt/ost2-4
+                         SHELL
+
       else
         oss.vm.provision 'create-zfs-fs',
                             type: 'shell',
@@ -388,30 +422,52 @@ __EOF
                               mkdir -p /lustre/zfsmo/ost01
                               mount -t lustre oss2/ost01 /lustre/zfsmo/ost01
                             SHELL
+
         oss.vm.provision 'create-ldiskfs-fs',
-                            type: 'shell',
-                            run: 'never',
-                            env: { 'device_query' => get_oss_block_device(slice, 0) },
-                            inline: <<-SHELL
-                              mkdir -p /mnt/ost2
-                              block_device=$(eval $device_query)
-                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=1 --mgsnode=10.73.20.11@tcp --fsname=fs $block_device
-                              echo mounting $block_device on /mnt/ost2
-                              mount -t lustre $block_device /mnt/ost2
-                            SHELL
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=5 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathk
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=6 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathl
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=7 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathm
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=8 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathn
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=9 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpatho
+                         SHELL
+
+        oss.vm.provision 'mount-ldiskfs-fs',
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                             mkdir -p /mnt/ost{5,6,7,8,9}
+                             mount -t lustre /dev/mapper/mpathk /mnt/ost5
+                             mount -t lustre /dev/mapper/mpathl /mnt/ost6
+                             mount -t lustre /dev/mapper/mpathm /mnt/ost7
+                             mount -t lustre /dev/mapper/mpathn /mnt/ost8
+                             mount -t lustre /dev/mapper/mpatho /mnt/ost9
+                         SHELL
 
         oss.vm.provision 'create-ldiskfs-fs2',
-                            type: 'shell',
-                            run: 'never',
-                            env: { 'device_query' => get_oss_block_device(slice, 1) },
-                            inline: <<-SHELL
-                              mkdir -p /mnt/ost4
-                              block_device=$(eval $device_query)
-                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=1 --mgsnode=10.73.20.11@tcp --fsname=fs2 $block_device
-                              echo mounting $block_device on /mnt/ost4
-                              mount -t lustre $block_device /mnt/ost4
-                            SHELL
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=5 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathp
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=6 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathq
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=7 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathr
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=8 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpaths
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=9 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpatht
+                         SHELL
 
+        oss.vm.provision 'mount-ldiskfs-fs2',
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                             mkdir -p /mnt/ost2-{5,6,7,8,9}
+                             mount -t lustre /dev/mapper/mpathq /mnt/ost2-5
+                             mount -t lustre /dev/mapper/mpathq /mnt/ost2-6
+                             mount -t lustre /dev/mapper/mpathr /mnt/ost2-7
+                             mount -t lustre /dev/mapper/mpaths /mnt/ost2-8
+                             mount -t lustre /dev/mapper/mpatht /mnt/ost2-9
+                         SHELL
       end
     end
   end
@@ -495,7 +551,6 @@ def provision_zfs_params(config)
   SHELL
 end
 
-
 def cleanup_storage_server(config)
   config.vm.provision 'cleanup', type: 'shell', run: 'never', inline: <<-SHELL
     yum autoremove -y chroma-agent
@@ -565,12 +620,6 @@ def install_zfs_no_iml(config)
   SHELL
 end
 
-def get_oss_block_device(slice, idx)
-  <<-SHELL
-    echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.Root .children | map(select(.ScsiDevice | .filesystem_type == "mpath_member")) | map(.ScsiDevice | .children) | flatten | map(.Mpath) | map(.paths | .[2]) | unique | .[#{slice}] | .[#{idx}]'
-  SHELL
-end
-
 def get_oss_block_devices(slice)
   <<-SHELL
     echo '"Stream"' | socat - UNIX-CONNECT:/var/run/device-scanner.sock | jq -r '.Root .children | map(select(.ScsiDevice | .filesystem_type == "mpath_member")) | map(.ScsiDevice | .children) | flatten | map(.Mpath) | map(.paths | .[2]) | unique | sort | .[#{slice}] | .[]'
@@ -579,7 +628,7 @@ end
 
 def get_vm_name(id)
   out, err = Open3.capture2e('VBoxManage list vms')
-  raise out unless err.exitstatus === 0
+  raise out unless err.exitstatus.zero?
 
   path = path = File.dirname(__FILE__).split('/').last
   name = out.split(/\n/)
@@ -655,7 +704,7 @@ def create_iscsi_disks(vbox, name)
 end
 
 def configure_docker_network(config)
-  config.trigger.before :provision, name: "configure-docker-network-trigger" do |t|
+  config.trigger.before :provision, name: 'configure-docker-network-trigger' do |t|
     t.ruby do |_, _|
       if ARGV[3] == 'configure-docker-network'
         puts 'Copying identify file to job scheduler container.'

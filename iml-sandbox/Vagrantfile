@@ -241,8 +241,6 @@ __EOF
                          run: 'never',
                          inline: <<-SHELL
                               mkfs.lustre --mgs --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp /dev/mapper/mpatha
-                              mkdir -p /mnt/mgs
-                              mount -t lustre /dev/mapper/mpatha /mnt/mgs
                               mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathb
                          SHELL
 
@@ -277,9 +275,7 @@ __EOF
                             type: 'shell',
                             run: 'never',
                             inline: <<-SHELL
-                              mkdir -p /mnt/mdt2
                               mkfs.lustre --mdt --reformat --servicenode=10.73.20.11@tcp --servicenode=10.73.20.12@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathd
-                              mount -t lustre /dev/mapper/mpathd /mnt/mdt2
                             SHELL
 
         mds.vm.provision 'mount-ldiskfs-fs',
@@ -288,6 +284,14 @@ __EOF
                          inline: <<-SHELL
                            mkdir -p /mnt/mdt1
                            mount -t lustre /dev/mapper/mpathc /mnt/mdt1
+                         SHELL
+
+        mds.vm.provision 'mount-ldiskfs-fs2',
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                           mkdir -p /mnt/mdt2
+                           mount -t lustre /dev/mapper/mpathd /mnt/mdt2
                          SHELL
       end
     end
@@ -450,11 +454,11 @@ __EOF
                          type: 'shell',
                          run: 'never',
                          inline: <<-SHELL
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=5 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathp
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=6 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathq
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=7 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathr
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=8 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpaths
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=9 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpatht
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=5 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathp
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=6 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathq
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=7 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathr
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=8 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpaths
+                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=9 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpatht
                          SHELL
 
         oss.vm.provision 'mount-ldiskfs-fs2',
@@ -462,7 +466,7 @@ __EOF
                          run: 'never',
                          inline: <<-SHELL
                              mkdir -p /mnt/ost2-{5,6,7,8,9}
-                             mount -t lustre /dev/mapper/mpathq /mnt/ost2-5
+                             mount -t lustre /dev/mapper/mpathp /mnt/ost2-5
                              mount -t lustre /dev/mapper/mpathq /mnt/ost2-6
                              mount -t lustre /dev/mapper/mpathr /mnt/ost2-7
                              mount -t lustre /dev/mapper/mpaths /mnt/ost2-8

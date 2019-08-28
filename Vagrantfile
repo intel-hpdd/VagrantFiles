@@ -38,42 +38,32 @@ Vagrant.configure('2') do |config|
 #{MGMT_NET_PFX}.12 mds2.local mds2
 #{MGMT_NET_PFX}.21 oss1.local oss1
 #{MGMT_NET_PFX}.22 oss2.local oss2
-#{MGMT_NET_PFX}.23 oss3.local oss3
-#{MGMT_NET_PFX}.24 oss4.local oss4
     __EOF
     (1..8).each do |cidx|
       f.puts "#{MGMT_NET_PFX}.3#{cidx} c#{cidx}.local c#{cidx}\n"
     end
   end
+
   config.vm.provision 'shell', inline: 'cp -f /vagrant/hosts /etc/hosts'
-  config.vm.provision 'shell', inline: "selinuxenabled && setenforce 0; cat >/etc/selinux/config<<__EOF
-SELINUX=disabled
-SELINUXTYPE=targeted
-__EOF"
+
+  config.vm.provision 'shell', path: './scripts/disable_selinux.sh'
+
+  system("ssh-keygen -t rsa -m PEM -N '' -f id_rsa") unless File.exist?('id_rsa')
+
+  config.vm.provision 'ssh', type: 'shell', path: './scripts/key_config.sh'
 
   config.vm.provision 'deps', type: 'shell', inline: <<-SHELL
     yum install -y epel-release
     yum install -y jq htop vim
   SHELL
 
-  system("ssh-keygen -t rsa -m PEM -N '' -f id_rsa") unless File.exist?('id_rsa')
-
-  config.vm.provision 'ssh', type: 'shell', inline: <<-SHELL
-    mkdir -m 0700 -p /root/.ssh
-    cp /vagrant/id_rsa /root/.ssh/.
-    chmod 0600 /root/.ssh/id_rsa
-    mkdir -m 0700 -p /root/.ssh
-    [ -f /vagrant/id_rsa.pub ] && (awk -v pk=\"`cat /vagrant/id_rsa.pub`\" 'BEGIN{split(pk,s,\" \")} $2 == s[2] {m=1;exit}END{if (m==0)print pk}' /root/.ssh/authorized_keys ) >> /root/.ssh/authorized_keys
-    chmod 0600 /root/.ssh/authorized_keys
-
-    cat > /etc/ssh/ssh_config <<__EOF
-    Host *
-      StrictHostKeyChecking no
-__EOF
-  SHELL
-
   config.vm.define 'iscsi' do |iscsi|
     iscsi.vm.hostname = 'iscsi.local'
+
+    iscsi.vm.provider 'virtualbox' do |vbx|
+      vbx.memory = 1024
+      vbx.cpus = 2
+    end
 
     provision_iscsi_net iscsi, '10'
 
@@ -135,37 +125,26 @@ __EOF
     # Install IML onto the admin node
     # Using the mfl devel repo
     adm.vm.provision 'install-iml-devel',
-                     type: 'shell', run: 'never',
-                     inline: <<-SHELL
-                     yum-config-manager --add-repo=https://github.com/whamcloud/integrated-manager-for-lustre/releases/download/5.next/chroma_support.repo
-                      yum install -y python2-iml-manager
-                      chroma-config setup admin lustre localhost --no-dbspace-check
-                     SHELL
+                     type: 'shell',
+                     run: 'never',
+                     path: 'scripts/install_iml.sh',
+                     args: 'https://github.com/whamcloud/integrated-manager-for-lustre/releases/download/5.next/chroma_support.repo'
 
     # Install IML 5.0 onto the admin node
     # Using the mfl 5.0 repo
     adm.vm.provision 'install-iml-5',
-                     type: 'shell', run: 'never',
-                     inline: <<-SHELL
-                      yum-config-manager --add-repo=https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/v5.0.0/chroma_support.repo
-                      yum install -y python2-iml-manager
-                      chroma-config setup admin lustre localhost --no-dbspace-check
-                     SHELL
+                     type: 'shell',
+                     run: 'never',
+                     path: 'scripts/install_iml.sh',
+                     args: 'https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/v5.0.0/chroma_support.repo'
 
     # Install IML onto the admin node
     # This requires you have the IML source tree available at
     # /integrated-manager-for-lustre
     adm.vm.provision 'install-iml-local',
-      type: 'shell', run: 'never',
-      inline: <<-SHELL
-        yum copr enable -y managerforlustre/manager-for-lustre-devel
-        yum install -y rpmdevtools git ed epel-release python-setuptools
-        cd /integrated-manager-for-lustre
-        make rpms
-        cp ./chroma_support.repo /etc/yum.repos.d/
-        yum install -y /integrated-manager-for-lustre/_topdir/RPMS/noarch/python2-iml-manager-*
-        chroma-config setup admin lustre localhost --no-dbspace-check
-      SHELL
+                     type: 'shell',
+                     run: 'never',
+                     path: 'scripts/install_iml_local.sh'
   end
 
   #
@@ -215,7 +194,7 @@ __EOF
       install_ldiskfs_no_iml mds
 
       configure_docker_network mds
-      
+
       pool_name = (i == 1 ? 'mg' : 'md')
 
       mds.vm.provision 'create-pools',
@@ -546,13 +525,9 @@ def provision_fence_agents(config)
 end
 
 def provision_zfs_params(config)
-  config.vm.provision 'zfs-params', type: 'shell', inline: <<-SHELL
-    mkdir -p /sys/module/zfs/parameters
-    echo 100 > /sys/module/zfs/parameters/zfs_multihost_history
-    echo 60 > /sys/module/zfs/parameters/zfs_multihost_fail_intervals
-    echo options zfs zfs_multihost_history=100 > /etc/modprobe.d/iml_zfs_module_parameters.conf
-    echo options zfs zfs_multihost_fail_intervals=60 >> /etc/modprobe.d/iml_zfs_module_parameters.conf
-  SHELL
+  config.vm.provision 'zfs-params',
+                      type: 'shell',
+                      path: './scripts/zfs_params.sh'
 end
 
 def cleanup_storage_server(config)
@@ -581,13 +556,7 @@ def configure_lustre_network(config)
   config.vm.provision 'configure-lustre-network',
                       type: 'shell',
                       run: 'never',
-                      inline: <<-SHELL
-                        modprobe lnet
-                        lnetctl lnet configure
-                        lnetctl net add --net tcp0 --if eth1
-                        lnetctl net show --net tcp > /etc/lnet.conf
-                        systemctl enable lnet.service
-                      SHELL
+                      path: './scripts/configure_lustre_network.sh'
 end
 
 def install_lustre_zfs(config)
@@ -599,29 +568,24 @@ def install_lustre_zfs(config)
 end
 
 def install_lustre_ldiskfs(config)
-  config.vm.provision 'install-lustre-ldiskfs', type: 'shell', run: 'never', inline: <<-SHELL
-    yum clean all
-    yum install -y lustre-ldiskfs
-  SHELL
+  config.vm.provision 'install-lustre-ldiskfs',
+                      type: 'shell',
+                      run: 'never',
+                      inline: 'yum install -y lustre-ldiskfs'
 end
 
 def install_ldiskfs_no_iml(config)
-  config.vm.provision 'install-ldiskfs-no-iml', type: 'shell', run: 'never', inline: <<-SHELL
-    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/lustre/lustre-2.12.2/el7/patchless-ldiskfs-server/
-    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/e2fsprogs/latest/el7/
-    yum install -y --nogpgcheck lustre kmod-lustre-osd-ldiskfs ntp
-    systemctl enable --now ntpd
-  SHELL
+  config.vm.provision 'install-ldiskfs-no-iml',
+                      type: 'shell',
+                      run: 'never',
+                      path: './scripts/install_ldiskfs_no_iml.sh'
 end
 
 def install_zfs_no_iml(config)
-  config.vm.provision 'install-zfs-no-iml', type: 'shell', run: 'never', inline: <<-SHELL
-    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/lustre/lustre-2.12.2/el7/patchless-ldiskfs-server/
-    yum-config-manager --add-repo=https://downloads.whamcloud.com/public/e2fsprogs/latest/el7/
-    yum-config-manager --add-repo=http://download.zfsonlinux.org/epel/7.6/kmod/x86_64/
-    yum install -y --nogpgcheck lustre zfs kmod-lustre-osd-ldiskfs kmod-lustre-osd-zfs ntp
-    systemctl enable --now ntpd
-  SHELL
+  config.vm.provision 'install-zfs-no-iml',
+                      type: 'shell',
+                      run: 'never',
+                      path: './scripts/install_zfs_no_iml.sh'
 end
 
 def get_oss_block_devices(slice)
@@ -651,7 +615,7 @@ def controller_exists(name, controller_name)
   return false if name.nil?
 
   out, err = Open3.capture2e("VBoxManage showvminfo #{name}")
-  raise out unless err.exitstatus === 0
+  raise out unless err.exitstatus.zero?
 
   out.split(/\n/)
      .select { |x| x.start_with? 'Storage Controller Name' }

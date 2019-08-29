@@ -351,7 +351,7 @@ Vagrant.configure('2') do |config|
                               mkfs.lustre --failover 10.73.20.22@tcp --ost --backfstype=zfs --fsname=zfsmo --index=7 --mgsnode=10.73.20.11@tcp ost7/ost7
                               mkfs.lustre --failover 10.73.20.22@tcp --ost --backfstype=zfs --fsname=zfsmo --index=8 --mgsnode=10.73.20.11@tcp ost8/ost8
                               mkfs.lustre --failover 10.73.20.22@tcp --ost --backfstype=zfs --fsname=zfsmo --index=9 --mgsnode=10.73.20.11@tcp ost9/ost9
-                              mkdir -p /lustre/zfsmo/ost{0,9}
+                              mkdir -p /lustre/zfsmo/ost{0..9}
                               mount -t lustre ost0/ost0 /lustre/zfsmo/ost0
                               mount -t lustre ost1/ost1 /lustre/zfsmo/ost1
                               mount -t lustre ost2/ost2 /lustre/zfsmo/ost2
@@ -427,17 +427,17 @@ Vagrant.configure('2') do |config|
                          type: 'shell',
                          run: 'never',
                          inline: <<-SHELL
-                              mkfs.lustre --failover 10.73.20.22@tcp --ost --backfstype=zfs --fsname=zfsmo --index=10 --mgsnode=10.73.20.11@tcp ost10/ost10
-                              mkfs.lustre --failover 10.73.20.22@tcp --ost --backfstype=zfs --fsname=zfsmo --index=11 --mgsnode=10.73.20.11@tcp ost11/ost11
-                              mkfs.lustre --failover 10.73.20.22@tcp --ost --backfstype=zfs --fsname=zfsmo --index=12 --mgsnode=10.73.20.11@tcp ost12/ost12
-                              mkfs.lustre --failover 10.73.20.22@tcp --ost --backfstype=zfs --fsname=zfsmo --index=13 --mgsnode=10.73.20.11@tcp ost13/ost13
-                              mkfs.lustre --failover 10.73.20.22@tcp --ost --backfstype=zfs --fsname=zfsmo --index=14 --mgsnode=10.73.20.11@tcp ost14/ost14
-                              mkfs.lustre --failover 10.73.20.22@tcp --ost --backfstype=zfs --fsname=zfsmo --index=15 --mgsnode=10.73.20.11@tcp ost15/ost15
-                              mkfs.lustre --failover 10.73.20.22@tcp --ost --backfstype=zfs --fsname=zfsmo --index=16 --mgsnode=10.73.20.11@tcp ost16/ost16
-                              mkfs.lustre --failover 10.73.20.22@tcp --ost --backfstype=zfs --fsname=zfsmo --index=17 --mgsnode=10.73.20.11@tcp ost17/ost17
-                              mkfs.lustre --failover 10.73.20.22@tcp --ost --backfstype=zfs --fsname=zfsmo --index=18 --mgsnode=10.73.20.11@tcp ost18/ost18
-                              mkfs.lustre --failover 10.73.20.22@tcp --ost --backfstype=zfs --fsname=zfsmo --index=19 --mgsnode=10.73.20.11@tcp ost19/ost19
-                              mkdir -p /lustre/zfsmo/ost{0,9}
+                              mkfs.lustre --failover 10.73.20.21@tcp --ost --backfstype=zfs --fsname=zfsmo --index=10 --mgsnode=10.73.20.11@tcp ost10/ost10
+                              mkfs.lustre --failover 10.73.20.21@tcp --ost --backfstype=zfs --fsname=zfsmo --index=11 --mgsnode=10.73.20.11@tcp ost11/ost11
+                              mkfs.lustre --failover 10.73.20.21@tcp --ost --backfstype=zfs --fsname=zfsmo --index=12 --mgsnode=10.73.20.11@tcp ost12/ost12
+                              mkfs.lustre --failover 10.73.20.21@tcp --ost --backfstype=zfs --fsname=zfsmo --index=13 --mgsnode=10.73.20.11@tcp ost13/ost13
+                              mkfs.lustre --failover 10.73.20.21@tcp --ost --backfstype=zfs --fsname=zfsmo --index=14 --mgsnode=10.73.20.11@tcp ost14/ost14
+                              mkfs.lustre --failover 10.73.20.21@tcp --ost --backfstype=zfs --fsname=zfsmo --index=15 --mgsnode=10.73.20.11@tcp ost15/ost15
+                              mkfs.lustre --failover 10.73.20.21@tcp --ost --backfstype=zfs --fsname=zfsmo --index=16 --mgsnode=10.73.20.11@tcp ost16/ost16
+                              mkfs.lustre --failover 10.73.20.21@tcp --ost --backfstype=zfs --fsname=zfsmo --index=17 --mgsnode=10.73.20.11@tcp ost17/ost17
+                              mkfs.lustre --failover 10.73.20.21@tcp --ost --backfstype=zfs --fsname=zfsmo --index=18 --mgsnode=10.73.20.11@tcp ost18/ost18
+                              mkfs.lustre --failover 10.73.20.21@tcp --ost --backfstype=zfs --fsname=zfsmo --index=19 --mgsnode=10.73.20.11@tcp ost19/ost19
+                              mkdir -p /lustre/zfsmo/ost{10..19}
                               mount -t lustre ost10/ost10 /lustre/zfsmo/ost10
                               mount -t lustre ost11/ost11 /lustre/zfsmo/ost11
                               mount -t lustre ost12/ost12 /lustre/zfsmo/ost12

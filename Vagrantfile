@@ -72,41 +72,10 @@ Vagrant.configure('2') do |config|
       create_iscsi_disks(vbx, name)
     end
 
-    ost_commands = ('f'..'z')
-                   .take(20)
-                   .flat_map.with_index do |x, i|
-      [
-        "targetcli /backstores/block create ost#{i + 1} /dev/sd#{x}",
-        "targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:oss/tpg1/luns/ create /backstores/block/ost#{i + 1}"
-      ]
-    end
-                   .join "\n"
-
-    iscsi.vm.provision 'bootstrap', type: 'shell', inline: <<-SHELL
-      yum -y install targetcli lsscsi
-      targetcli /backstores/block create mgt1 /dev/sdb
-      targetcli /backstores/block create mdt1 /dev/sdc
-      targetcli /backstores/block create mdt2 /dev/sdd
-      targetcli /backstores/block create mdt3 /dev/sde
-      targetcli /iscsi set global auto_add_default_portal=false
-      targetcli /iscsi create iqn.2015-01.com.whamcloud.lu:mds
-      targetcli /iscsi create iqn.2015-01.com.whamcloud.lu:oss
-      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/luns/ create /backstores/block/mgt1
-      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/luns/ create /backstores/block/mdt1
-      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/luns/ create /backstores/block/mdt2
-      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/luns/ create /backstores/block/mdt3
-      #{ost_commands}
-      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/portals/ create #{ISCI_IP}
-      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:oss/tpg1/portals/ create #{ISCI_IP}
-      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/portals/ create #{ISCI_IP2}
-      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:oss/tpg1/portals/ create #{ISCI_IP2}
-      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/acls create iqn.2015-01.com.whamcloud:mds1
-      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:mds/tpg1/acls create iqn.2015-01.com.whamcloud:mds2
-      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:oss/tpg1/acls create iqn.2015-01.com.whamcloud:oss1
-      targetcli /iscsi/iqn.2015-01.com.whamcloud.lu:oss/tpg1/acls create iqn.2015-01.com.whamcloud:oss2
-      targetcli saveconfig
-      systemctl enable target
-    SHELL
+    iscsi.vm.provision 'bootstrap',
+                       type: 'shell',
+                       path: './scripts/bootstrap-iscsi.sh',
+                       args: [ISCI_IP, ISCI_IP2]
   end
 
   #

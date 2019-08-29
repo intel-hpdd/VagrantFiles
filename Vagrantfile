@@ -74,7 +74,7 @@ Vagrant.configure('2') do |config|
 
     iscsi.vm.provision 'bootstrap',
                        type: 'shell',
-                       path: './scripts/bootstrap-iscsi.sh',
+                       path: './scripts/bootstrap_iscsi.sh',
                        args: [ISCI_IP, ISCI_IP2]
   end
 

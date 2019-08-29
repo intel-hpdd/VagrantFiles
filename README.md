@@ -305,6 +305,12 @@ To reboot a VM:
 vagrant reload [<vm name>]
 ```
 
+To stop a VM:
+
+```sh
+vagrant halt [<vm name>]
+```
+
 **Note:** Don't reboot a VM from within the guest shell. Always use the `vagrant reload` command from the host. Rebooting from within the guest invalidates the SSH configuration and will prevent a connection being made on the next boot.
 
 To get the current status of all VMs in a project:
@@ -342,6 +348,12 @@ To get a list of forwarded ports on each host, run:
 ```sh
 vagrant port <vm name>
 ```
+
+In additon to the built-in commands, Vagrant supports plugins which can add additional functionality. For example, the `vagrant-shell-commander` plugin allows commands to be run on multiple hosts like pdsh except serial.
+
+Refer to the Vagrant documentation for more information on plugins:
+
+<https://www.vagrantup.com/docs/plugins/usage.html>
 
 Refer to the Vagrant documentation for more information:
 

@@ -668,7 +668,7 @@ def create_iscsi_disks(vbox, name)
   end
 
   dir = "#{ENV['HOME']}/VirtualBox\ VMs/vdisks"
-  Dir.mkdir dir unless File.directory?(dir)
+  system 'mkdir', '-p', dir unless File.directory?(dir)
 
   osts = (1..20).map { |x| ["OST#{x}", '5120'] }
 

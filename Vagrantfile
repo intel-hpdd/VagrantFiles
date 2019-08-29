@@ -322,13 +322,8 @@ Vagrant.configure('2') do |config|
         oss.vm.provision 'create-ldiskfs-fs',
                          type: 'shell',
                          run: 'never',
-                         inline: <<-SHELL
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpatha
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=1 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathb
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=2 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathc
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=3 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathd
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=4 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathe
-                         SHELL
+                         path: 'scripts/create_ldiskfs_fs_osts.sh',
+                         args: ['a', 'e', 0, 'fs']
 
         oss.vm.provision 'mount-ldiskfs-fs',
                          type: 'shell',
@@ -345,13 +340,8 @@ Vagrant.configure('2') do |config|
         oss.vm.provision 'create-ldiskfs-fs2',
                          type: 'shell',
                          run: 'never',
-                         inline: <<-SHELL
-                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=0 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathf
-                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=1 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathg
-                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=2 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathh
-                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=3 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathi
-                              mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=4 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathj
-                         SHELL
+                         path: 'scripts/create_ldiskfs_fs_osts.sh',
+                         args: ['f', 'j', 0, 'fs2']
 
         oss.vm.provision 'mount-ldiskfs-fs2',
                          type: 'shell',
@@ -378,13 +368,8 @@ Vagrant.configure('2') do |config|
         oss.vm.provision 'create-ldiskfs-fs',
                          type: 'shell',
                          run: 'never',
-                         inline: <<-SHELL
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=5 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathk
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=6 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathl
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=7 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathm
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=8 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpathn
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=9 --mgsnode=10.73.20.11@tcp --fsname=fs /dev/mapper/mpatho
-                         SHELL
+                         path: 'scripts/create_ldiskfs_fs_osts.sh',
+                         args: ['k', 'o', 5, 'fs']
 
         oss.vm.provision 'mount-ldiskfs-fs',
                          type: 'shell',
@@ -401,13 +386,8 @@ Vagrant.configure('2') do |config|
         oss.vm.provision 'create-ldiskfs-fs2',
                          type: 'shell',
                          run: 'never',
-                         inline: <<-SHELL
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=5 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathp
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=6 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathq
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=7 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpathr
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=8 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpaths
-                             mkfs.lustre --ost --reformat --servicenode=10.73.20.21@tcp --servicenode=10.73.20.22@tcp --index=9 --mgsnode=10.73.20.11@tcp --fsname=fs2 /dev/mapper/mpatht
-                         SHELL
+                         path: 'scripts/create_ldiskfs_fs_osts.sh',
+                         args: ['p', 't', 5, 'fs2']
 
         oss.vm.provision 'mount-ldiskfs-fs2',
                          type: 'shell',
@@ -578,7 +558,8 @@ def get_vm_name(id)
 end
 
 # Checks if a scsi controller exists.
-# This is used as a predicate to create controllers, as vagrant does not provide this
+# This is used as a predicate to create controllers,
+# as vagrant does not provide this
 # functionality by default.
 def controller_exists(name, controller_name)
   return false if name.nil?

@@ -605,7 +605,7 @@ def create_iscsi_disks(vbox, name)
                       '--format',
                       'VDI',
                       '--variant',
-                      'fixed']
+                      'standard']
     end
 
     vbox.customize ['storageattach', :id,

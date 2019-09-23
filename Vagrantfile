@@ -520,8 +520,9 @@ Vagrant.configure('2') do |config|
       provision_lnet_net c, "3#{i}"
 
       c.vm.provision 'install-lustre-client',
-                          type: 'shell',
-                          inline: <<-SHELL
+                     type: 'shell',
+                     run: 'never',
+                     inline: <<-SHELL
                             yum-config-manager --add-repo https://downloads.whamcloud.com/public/lustre/lustre-2.12.2/el7/client/
                             yum install -y --nogpgcheck lustre-client
                           SHELL

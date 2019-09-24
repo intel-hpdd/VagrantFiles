@@ -1,5 +1,4 @@
-cd /tmp
-curl -L $1 | tar zx
-cd /tmp/$2
-./install --no-dbspace-check
-chroma-config setup admin lustre localhost --no-dbspace-check
+mkdir -p /tmp/iml-install
+cd /tmp/iml-install
+curl -L $1 | tar zx --strip 1
+yes [admin, lustre, lustre,,] | ./install --no-dbspace-check

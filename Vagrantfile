@@ -121,7 +121,7 @@ Vagrant.configure('2') do |config|
                      type: 'shell',
                      run: 'never',
                      path: 'scripts/install_iml_tar.sh',
-                     args: ['https://github.com/whamcloud/integrated-manager-for-lustre/releases/download/v4.0.10.2/iml-4.0.10.2.tar.gz', 'iml-4.0.10.2']
+                     args: 'https://github.com/whamcloud/integrated-manager-for-lustre/releases/download/v4.0.10.2/iml-4.0.10.2.tar.gz'
 
     # Install IML onto the admin node
     # This requires you have the IML source tree available at

@@ -1,31 +1,6 @@
 mkdir -p /tmp/iml-install
 cd /tmp/iml-install
-curl -L $1 | tar zx --strip 1
+curl -L https://github.com/whamcloud/integrated-manager-for-lustre/releases/download/v$1/iml-$1.tar.gz | tar zx --strip 1
 yum install -y expect
-/usr/bin/expect << EOF
-set timeout -1
-
-spawn ./install --no-dbspace-check
-
-expect "Username: "
-
-send -- "admin\r"
-
-expect "Password: "
-
-send -- "lustre\r"
-
-expect "Confirm password: "
-
-send -- "lustre\r"
-
-expect "Email: "
-
-send -- "\r"
-
-expect "NTP Server *: "
-
-send -- "\r"
-
-expect eof
-EOF
+curl -O https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/v4.0.10.2/chroma-manager/tests/utils/install.exp
+/usr/bin/expect install.exp admin "" lustre ""

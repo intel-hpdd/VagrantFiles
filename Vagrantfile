@@ -120,8 +120,8 @@ Vagrant.configure('2') do |config|
     adm.vm.provision 'install-iml-4.0.10',
                      type: 'shell',
                      run: 'never',
-                     path: 'scripts/install_iml.sh',
-                     args: 'https://raw.githubusercontent.com/whamcloud/integrated-manager-for-lustre/v4.0.10.2/chroma-bundles/chroma_support.repo'
+                     path: 'scripts/install_iml_tar.sh',
+                     args: '4.0.10.2'
 
     # Install IML onto the admin node
     # This requires you have the IML source tree available at

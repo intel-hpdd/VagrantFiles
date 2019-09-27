@@ -44,6 +44,8 @@ Vagrant.configure('2') do |config|
     end
   end
 
+  use_vault_7_6_1810 config
+
   config.vm.provision 'shell', inline: 'cp -f /vagrant/hosts /etc/hosts'
 
   config.vm.provision 'shell', path: './scripts/disable_selinux.sh'
@@ -631,6 +633,14 @@ def install_zfs_no_iml(config)
                       type: 'shell',
                       run: 'never',
                       path: './scripts/install_zfs_no_iml.sh'
+end
+
+def use_vault_7_6_1810(config)
+  config.vm.provision 'use-vault-7-6-1810',
+                      type: 'shell',
+                      run: 'never',
+                      path: './scripts/use_vault.sh',
+                      args: '7.6.1810'
 end
 
 def get_vm_name(id)

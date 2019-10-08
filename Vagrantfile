@@ -132,6 +132,11 @@ Vagrant.configure('2') do |config|
                      type: 'shell',
                      run: 'never',
                      path: 'scripts/install_iml_local.sh'
+
+    adm.vm.provision 'load-diagnostics-db',
+                     type: 'shell',
+                     run: 'never',
+                     path: 'scripts/load-diagnostics-db.sh'
   end
 
   #

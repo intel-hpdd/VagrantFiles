@@ -530,9 +530,9 @@ Vagrant.configure('2') do |config|
                      type: 'shell',
                      run: 'never',
                      inline: <<-SHELL
-                            yum-config-manager --add-repo https://downloads.whamcloud.com/public/lustre/lustre-2.12.2/el7/client/
+                            yum-config-manager --add-repo https://downloads.whamcloud.com/public/lustre/lustre-2.12.3/el7/client/
                             yum install -y --nogpgcheck lustre-client
-                          SHELL
+                     SHELL
     end
   end
 end

@@ -44,6 +44,8 @@ Vagrant.configure('2') do |config|
     end
   end
 
+  provision_yum_updates config
+
   use_vault_7_6_1810 config
 
   config.vm.provision 'shell', inline: 'cp -f /vagrant/hosts /etc/hosts'
@@ -646,6 +648,13 @@ def use_vault_7_6_1810(config)
                       run: 'never',
                       path: './scripts/use_vault.sh',
                       args: '7.6.1810'
+end
+
+def provision_yum_updates(config)
+  config.vm.provision 'yum-update',
+                     type: 'shell',
+                     run: 'never',
+                     inline: 'yum clean metadata; yum update -y'
 end
 
 def get_vm_name(id)

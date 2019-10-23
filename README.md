@@ -49,6 +49,8 @@ The IML Team typically uses [Vagrant](https://www.vagrantup.com) and [VirtualBox
    vagrant provision --provision-with=install-iml-devel
    ```
 
+At this point you should be able to access the IML GUI on your host at https://localhost:8443
+
 From here you can decide what type of setup to run.
 
 - Monitored Ldiskfs:

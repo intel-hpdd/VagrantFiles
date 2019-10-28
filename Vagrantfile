@@ -657,6 +657,16 @@ def provision_yum_updates(config)
                      inline: 'yum clean metadata; yum update -y'
 end
 
+def get_machine_folder()
+  out, err = Open3.capture2e('VBoxManage list systemproperties')
+  raise out unless err.exitstatus.zero?
+
+  out.split(/\n/)
+      .select { |x| x.start_with? 'Default machine folder:' }
+      .map { |x| x.split('Default machine folder:')[1].strip }
+      .first
+end
+
 def get_vm_name(id)
   out, err = Open3.capture2e('VBoxManage list vms')
   raise out unless err.exitstatus.zero?
@@ -695,7 +705,7 @@ def create_iscsi_disks(vbox, name)
                     '--add', 'sata']
   end
 
-  dir = "#{ENV['HOME']}/VirtualBox\ VMs/vdisks"
+  dir = "#{get_machine_folder()}/vdisks"
   system 'mkdir', '-p', dir unless File.directory?(dir)
 
   osts = (1..20).map { |x| ["OST#{x}", '5120'] }

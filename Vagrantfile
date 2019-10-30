@@ -135,6 +135,12 @@ Vagrant.configure('2') do |config|
                      run: 'never',
                      path: 'scripts/install_iml_local.sh'
 
+    adm.vm.provision 'deploy-managed-hosts',
+                     type: 'shell',
+                     run: 'never',
+                     path: 'scripts/deploy_hosts.sh',
+                     args: 'base_managed_patchless'
+
     adm.vm.provision 'load-diagnostics-db',
                      type: 'shell',
                      run: 'never',

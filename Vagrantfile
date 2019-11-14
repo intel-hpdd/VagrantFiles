@@ -2,6 +2,7 @@
 # vi: set ft=ruby :
 
 require 'open3'
+require 'fileutils'
 
 # Create a set of /24 networks under a single /16 subnet range
 SUBNET_PREFIX = '10.73'.freeze
@@ -712,7 +713,7 @@ def create_iscsi_disks(vbox, name)
   end
 
   dir = "#{get_machine_folder()}/vdisks"
-  system 'mkdir', '-p', dir unless File.directory?(dir)
+  FileUtils.mkdir_p dir unless File.directory?(dir)
 
   osts = (1..20).map { |x| ["OST#{x}", '5120'] }
 

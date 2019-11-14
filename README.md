@@ -2,7 +2,17 @@
 
 ## Setup IML with Vagrant and VirtualBox
 
-The IML Team typically uses [Vagrant](https://www.vagrantup.com) and [VirtualBox](https://www.virtualbox.org/wiki/Downloads) for day to day development tasks. The following guide will provide an overview of how to setup a development environment from scratch and assumes macos as the backing host platform.
+The IML Team typically uses [Vagrant](https://www.vagrantup.com) and [VirtualBox](https://www.virtualbox.org/wiki/Downloads) for day to day development tasks. The following guide will provide an overview of how to setup a development environment from scratch.
+
+1. Clone the [Vagrant repo](https://github.com/whamcloud/Vagrantfiles) from Github:
+
+   ```sh
+   git clone https://github.com/whamcloud/Vagrantfiles.git
+   ```
+
+1. cd into the newly created Vagrantfiles directory
+
+### MacOS
 
 1. Install Homebrew
 
@@ -21,14 +31,6 @@ The IML Team typically uses [Vagrant](https://www.vagrantup.com) and [VirtualBox
    ```sh
    VBoxManage hostonlyif create
    ```
-
-1. Clone the [Vagrant repo](https://github.com/whamcloud/Vagrantfiles) from Github:
-
-   ```sh
-   git clone https://github.com/whamcloud/Vagrantfiles.git
-   ```
-
-1. cd into the newly created Vagrantfiles directory
 
 1. Bring up the cluster (manager, 2 mds, 2 oss, 2 client nodes)
 
@@ -68,3 +70,31 @@ From here you can decide what type of setup to run.
 - Managed Mode:
 
   https://whamcloud.github.io/Online-Help/docs/Contributor_Docs/cd_Managed_ZFS.html
+
+### Windows
+
+This is tested on Windows 10 1909.
+
+1. [Install Chocolatey](https://chocolatey.org/install#individual).
+   If it fails with errors suggesting update of .NET Framework, go to Windows Update and get all the latest updates.
+
+1. Install Vagrant and VirtualBox using Chocolatey:
+
+```
+choco install vagrant
+choco upgrade virtualbox --version=6.0.6
+```
+
+**Warning**: there's an unresolved bug which causes guest CentOS 7 to kernel panic in VirtualBox 6.0.14 on modern Windows 10. Hence the requirement of VirtualBox 6.0.6.
+[Details](https://forums.virtualbox.org/viewtopic.php?f=3&t=94358&sid=121c40fa78668a52835a3ce56b63f389&start=15#p457443).
+
+**Further notes**: VirtualBox Extensions 6.0.6 can't be built for CentOS 7. [Details](https://forums.virtualbox.org/viewtopic.php?f=3&t=94777
+). It's fixed even further upstream (maybe 6.0.14 or later). This means you won't be able to use CentOS in VirtualBox as a development environment (screen resolution, shared folders and other features don't work). Workaround is to use VMWare Player, which is also available on Chocolatey.
+
+1. Bring up the cluster with
+
+```
+vagrant up
+```
+
+and continue as with MacOS.

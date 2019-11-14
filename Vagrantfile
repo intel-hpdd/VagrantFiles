@@ -565,15 +565,31 @@ def provision_lnet_net(config, num)
                     virtualbox__intnet: 'lnet-net'
 end
 
+module OS
+  def OS.windows?
+    (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RbConfig::CONFIG["host_os"]) != nil
+  end
+
+  def OS.mac?
+    (/darwin/ =~ RbConfig::CONFIG["host_os"]) != nil
+  end
+
+  def OS.unix?
+    !OS.windows?
+  end
+
+  def OS.linux?
+    OS.unix? and not OS.mac?
+  end
+end
+
 def provision_mgmt_net(config, num)
+  interface_name = if OS.windows? then 'VirtualBox Host-Only Ethernet Adapter' else 'vboxnet0' end
+  
   config.vm.network 'private_network',
                     ip: "#{MGMT_NET_PFX}.#{num}",
-                    netmask: '255.255.255.0'
-# The specified host network could not be found: 'vboxnet0.'
-# If the name specification is removed, Vagrant will create a new
-# host only network for you. Alternatively, please create the
-# specified network manually.
-#                    name: 'vboxnet0'
+                    netmask: '255.255.255.0',
+                    name: interface_name
 end
 
 def provision_mpath(config)

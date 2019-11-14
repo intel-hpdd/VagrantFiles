@@ -88,8 +88,6 @@ choco upgrade virtualbox --version=6.0.6
 **Warning**: there's an unresolved bug which causes guest CentOS 7 to kernel panic in VirtualBox 6.0.14 on modern Windows 10. Hence the requirement of VirtualBox 6.0.6.
 [Details](https://forums.virtualbox.org/viewtopic.php?f=3&t=94358&sid=121c40fa78668a52835a3ce56b63f389&start=15#p457443).
 
-1. Make sure your VirtualBox has Extension Package installed. Chocolatey should install it by default, but in case it doesn't, install it manually.
-
 **Further notes**: VirtualBox Extensions 6.0.6 can't be built for CentOS 7. [Details](https://forums.virtualbox.org/viewtopic.php?f=3&t=94777
 ). It's fixed even further upstream (maybe 6.0.14 or later). This means you won't be able to use CentOS in VirtualBox as a development environment (screen resolution, shared folders and other features don't work). Workaround is to use VMWare Player, which is also available on Chocolatey.
 

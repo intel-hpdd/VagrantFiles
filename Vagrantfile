@@ -568,8 +568,12 @@ end
 def provision_mgmt_net(config, num)
   config.vm.network 'private_network',
                     ip: "#{MGMT_NET_PFX}.#{num}",
-                    netmask: '255.255.255.0',
-                    name: 'vboxnet0'
+                    netmask: '255.255.255.0'
+# The specified host network could not be found: 'vboxnet0.'
+# If the name specification is removed, Vagrant will create a new
+# host only network for you. Alternatively, please create the
+# specified network manually.
+#                    name: 'vboxnet0'
 end
 
 def provision_mpath(config)

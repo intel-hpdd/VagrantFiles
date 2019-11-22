@@ -774,11 +774,15 @@ end
 
 def configure_docker_network(config)
   config.trigger.before :provision, name: 'configure-docker-network-trigger' do |t|
-    t.ruby do |_, _|
+    t.ruby do |_, machine|
       if ARGV[3] == 'configure-docker-network'
         puts 'Copying identify file to job scheduler container.'
         puts `docker ps --format '{{.Names}}' | grep job-scheduler | xargs -I {} docker exec {} sh -c 'mkdir -p /root/.ssh'`
         puts `docker ps --format '{{.Names}}' | grep job-scheduler | xargs -I {} docker cp id_rsa {}:/root/.ssh`
+        puts "Writing authorized keys to #{machine.name}"
+        puts `cat ~/.ssh/id_rsa.pub | ssh -i ./.vagrant/machines/#{machine.name}/virtualbox/private_key vagrant@#{machine.name} \
+             "cat > /tmp/id_rsa.pub && sudo su - -c 'mkdir -p /root/.ssh && touch /root/.ssh/authorized_keys && cat /tmp/id_rsa.pub \
+             >> /root/.ssh/authorized_keys && rm -f /tmp/id_rsa.pub'"`
       end
     end
   end

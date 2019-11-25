@@ -75,6 +75,8 @@ From here you can decide what type of setup to run.
 
 This is tested on Windows 10 1909.
 
+**Ensure your Windows user home folder doesn't contain non-ASCII chracters.** Common case would be when user name you entered when configuring Windows for first use, was Cyrillic. Windows and apps still don't properly support it, and there are issues with encoding in Ruby, Vagrant and shell scripts in case your home is something like `C:\Users\Михаил`.
+
 1. [Install Chocolatey](https://chocolatey.org/install#individual).
    If it fails with errors suggesting update of .NET Framework, go to Windows Update and get all the latest updates.
 

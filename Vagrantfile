@@ -204,6 +204,14 @@ Vagrant.configure('2') do |config|
                            zpool create mdt0 -o multihost=on /dev/mapper/mpathb
                          SHELL
 
+        mds.vm.provision 'import-pools',
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                           zpool import mgt
+                           zpool import mdt0
+                         SHELL
+
         mds.vm.provision 'zfs-params',
                          type: 'shell',
                          run: 'never',
@@ -247,6 +255,13 @@ Vagrant.configure('2') do |config|
                          inline: <<-SHELL
                            genhostid
                            zpool create mdt1 -o multihost=on /dev/mapper/mpathc
+                         SHELL
+
+      mds.vm.provision 'import-pools',
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                           zpool import mdt1
                          SHELL
 
         mds.vm.provision 'zfs-params',
@@ -364,6 +379,22 @@ Vagrant.configure('2') do |config|
                            zpool create ost9 -o multihost=on /dev/mapper/mpathj
                          SHELL
 
+        oss.vm.provision 'import-pools',
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                           zpool import ost0
+                           zpool import ost1
+                           zpool import ost2
+                           zpool import ost3
+                           zpool import ost4
+                           zpool import ost5
+                           zpool import ost6
+                           zpool import ost7
+                           zpool import ost8
+                           zpool import ost9
+                         SHELL
+
         oss.vm.provision 'zfs-params',
                          type: 'shell',
                          run: 'never',
@@ -448,6 +479,22 @@ Vagrant.configure('2') do |config|
                            zpool create ost17 -o multihost=on /dev/mapper/mpathr
                            zpool create ost18 -o multihost=on /dev/mapper/mpaths
                            zpool create ost19 -o multihost=on /dev/mapper/mpatht
+                         SHELL
+
+        oss.vm.provision 'import-pools',
+                         type: 'shell',
+                         run: 'never',
+                         inline: <<-SHELL
+                           zpool import ost10
+                           zpool import ost11
+                           zpool import ost12
+                           zpool import ost13
+                           zpool import ost14
+                           zpool import ost15
+                           zpool import ost16
+                           zpool import ost17
+                           zpool import ost18
+                           zpool import ost19
                          SHELL
 
         oss.vm.provision 'zfs-params',

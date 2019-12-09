@@ -69,7 +69,9 @@ From here you can decide what type of setup to run.
 
 - Managed Mode:
 
-  https://whamcloud.github.io/Online-Help/docs/Contributor_Docs/cd_Managed_ZFS.html
+  ```sh
+  vagrant provision --provision-with=deploy-managed-hosts adm
+  ```
 
 ### Windows
 
